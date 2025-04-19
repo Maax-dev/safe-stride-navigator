@@ -60,6 +60,38 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Firebase Setup
+
+To connect this application to Firebase:
+
+1. Create a Firebase project at [firebase.google.com](https://firebase.google.com)
+2. Enable Authentication, Firestore, and Storage services
+3. Create a web app in your Firebase project
+4. Copy your Firebase config from the Firebase Console
+5. Update the `src/firebase/config.ts` file with your Firebase configuration
+
+```typescript
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID"
+};
+```
+
+6. Set up Firestore Database with the following collections:
+   - `incidents` - to store user-reported incidents
+   - `users` - to store additional user data
+
+## Mapbox Setup
+
+1. Create a Mapbox account at [mapbox.com](https://mapbox.com)
+2. Get your public access token
+3. Update the `MAPBOX_TOKEN` constant in `src/components/MapView.tsx`
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/f6c2afae-e601-4f89-b397-b34c3589bb80) and click on Share -> Publish.

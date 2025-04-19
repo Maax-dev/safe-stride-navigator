@@ -1,0 +1,47 @@
+
+import React from 'react';
+import { Button } from "@/components/ui/button";
+import MapView from '@/components/MapView';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Map } from "lucide-react";
+
+const Heatmap = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Header */}
+      <header className="border-b py-4 px-4">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/home')}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex items-center gap-1">
+              <Map className="h-5 w-5 text-primary" />
+              <h1 className="text-xl font-bold">Safety Heatmap</h1>
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      {/* Main Content */}
+      <div className="flex-1 container mx-auto p-4">
+        <div className="mb-4">
+          <p className="text-sm text-muted-foreground">
+            Viewing crime hotspots in a 20 mile radius of your location.
+            Red areas indicate higher concentrations of reported incidents.
+          </p>
+        </div>
+        
+        <MapView showHeatmap={true} />
+      </div>
+    </div>
+  );
+};
+
+export default Heatmap;
