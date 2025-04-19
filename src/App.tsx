@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import Heatmap from "./pages/Heatmap";
 import NotFound from "./pages/NotFound";
 import SetupPage from "./pages/Setup";
+import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
@@ -19,7 +20,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/home" element={<Home />} />
           <Route path="/heatmap" element={<Heatmap />} />
           <Route path="/setup" element={<SetupPage />} />
