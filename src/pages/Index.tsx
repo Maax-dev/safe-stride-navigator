@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { configManager } from '@/firebase/config';
@@ -11,24 +10,12 @@ const Index = () => {
     // Check if user is already authenticated
     const user = localStorage.getItem('safeStrideUser');
     
-    // Check if API configuration is set up
-    const firebaseConfig = configManager.getConfig();
-    const mapboxToken = localStorage.getItem('mapbox_token');
-    
-    // If API keys are not configured properly, go to setup
-    if (
-      firebaseConfig.apiKey === "YOUR_API_KEY" || 
-      !mapboxToken || 
-      mapboxToken === "YOUR_MAPBOX_PUBLIC_TOKEN"
-    ) {
-      navigate('/setup');
-    }
-    else if (user) {
-      // If authenticated, go to home page
+    // If authenticated, go to home page
+    if (user) {
       navigate('/home');
     } else {
       // Otherwise go to login page
-      navigate('/');
+      navigate('/login');
     }
   }, [navigate]);
 

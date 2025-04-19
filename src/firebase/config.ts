@@ -18,15 +18,15 @@ const FirebaseConfigManager = {
       }
     }
     
-    // Return the default config
+    // Return the default config with your provided values
     return {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID",
-      measurementId: "YOUR_MEASUREMENT_ID"
+      apiKey: "AIzaSyBdGwGymSi27kX7BYIOw1vDhm_ceeTTtaQ",
+      authDomain: "hack-66182.firebaseapp.com",
+      projectId: "hack-66182",
+      storageBucket: "hack-66182.firebasestorage.app",
+      messagingSenderId: "285771933954",
+      appId: "1:285771933954:web:fce66a1fddadd0b5a47a1b",
+      measurementId: "G-P19HD95HKL"
     };
   },
   
