@@ -11,6 +11,7 @@ import Heatmap from "./pages/Heatmap";
 import NotFound from "./pages/NotFound";
 import SetupPage from "./pages/Setup";
 import Index from "./pages/Index";
+import LeafletMap from './components/LeafletMap';
 
 // Create a client
 const queryClient = new QueryClient();
