@@ -30,6 +30,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     return storedLocation ? JSON.parse(storedLocation) : null;
   });
   const [destination, setDestination] = useState<string>("");
+  const [source, setSource] = useState<string>("");
   const [mapError, setMapError] = useState<string | null>(null);
   const [routeLine, setRouteLine] = useState<L.Polyline | null>(null);
   const [isMapInitialized, setIsMapInitialized] = useState(false);
@@ -460,6 +461,8 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
       <DestinationInput
         destination={destination}
         setDestination={setDestination}
+        source={source}
+        setSource={setSource}
         onCalculateRoute={calculateRoute}
         isLoading={isLoading}
       />
