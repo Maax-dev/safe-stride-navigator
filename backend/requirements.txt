@@ -10,3 +10,7 @@ networkx
 geopy
 shapely
 pyarrow
+bcrypt
+PyJWT
+python-dotenv 
+google-generativeai
