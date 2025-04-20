@@ -1,24 +1,19 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Mic, MapPin } from "lucide-react";
+import { Mic, MapPin, Square } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 const IncidentReporter = () => {
   const [isRecording, setIsRecording] = useState(false);
-  const [audioURL, setAudioURL] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [location, setLocation] = useState<{lat: number, lng: number} | null>(null);
-  
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  
-  // Get current location immediately when component mounts
-  React.useEffect(() => {
+  const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
     getCurrentLocation();
   }, []);
-  
+
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -45,127 +40,134 @@ const IncidentReporter = () => {
       });
     }
   };
-  
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-      
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        const url = URL.createObjectURL(audioBlob);
-        setAudioURL(url);
-        submitReport(audioBlob);
-        
-        stream.getTracks().forEach(track => track.stop());
-      };
-      
-      mediaRecorder.start();
-      setIsRecording(true);
-      
-      // Auto-stop after 30 seconds
-      setTimeout(() => {
-        if (mediaRecorderRef.current?.state === "recording") {
-          mediaRecorderRef.current.stop();
-          setIsRecording(false);
-        }
-      }, 30000);
-      
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
+
+  const startRecording = () => {
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SpeechRecognition) {
       toast({
-        title: "Microphone Error",
-        description: "Unable to access your microphone. Please check permissions.",
+        title: "Speech Recognition Not Supported",
+        description: "Please use Google Chrome or a supported browser.",
         variant: "destructive"
       });
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      console.log("Transcribed:", transcript);
+      submitReport(transcript);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event);
+      toast({
+        title: "Speech Recognition Failed",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+    toast({ title: "Recording started", description: "Click stop once done." });
+  };
+
+  const stopRecording = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+      toast({ title: "Recording stopped", description: "Processing your report..." });
     }
   };
-  
-  const submitReport = async (audioBlob: Blob) => {
+
+  const submitReport = async (transcript: string) => {
     if (!location) {
       getCurrentLocation();
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
-      const { reportIncident } = await import('@/firebase/incidents');
-      const userString = localStorage.getItem('safeStrideUser');
-      const user = userString ? JSON.parse(userString) : { email: 'anonymous' };
-      
-      await reportIncident(
-        {
-          description: "Audio report",
-          location: location,
-          reportedBy: user.email,
-          type: 'other',
-          severity: 3
+      const res = await fetch("http://127.0.0.1:5000/report_audio", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        audioBlob
-      );
-      
-      setAudioURL(null);
-      toast({
-        title: "Success",
-        description: "Incident reported successfully. Thank you for helping keep our community safe.",
+        body: JSON.stringify({
+          transcript,
+          lat: location.lat,
+          lon: location.lng,
+        }),
       });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({
+          title: "Report Submitted",
+          description: "Thank you for reporting. Your report was logged successfully."
+        });
+      } else {
+        toast({
+          title: "Submission Error",
+          description: data.error || "An error occurred. Please try again.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
-      console.error("Error submitting report:", error);
+      console.error("Submit Error:", error);
       toast({
-        title: "Error",
-        description: "There was a problem submitting your report. Please try again later.",
+        title: "Network Error",
+        description: "Please check your connection and try again.",
         variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <Card className="p-6 shadow-lg bg-background">
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-center">Report an Incident</h2>
-        
+
         <div className="space-y-4">
           <div className="flex items-center justify-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
             {location ? (
-              <span className="text-sm text-muted-foreground">
-                Location detected
-              </span>
+              <span className="text-sm text-muted-foreground">Location detected</span>
             ) : (
-              <span className="text-sm text-destructive">
-                Detecting location...
-              </span>
+              <span className="text-sm text-destructive">Detecting location...</span>
             )}
           </div>
-          
+
           <div className="flex flex-col items-center gap-4">
-            <Button
-              size="lg"
-              className={`w-48 h-48 rounded-full flex flex-col items-center justify-center gap-2 ${
-                isRecording ? 'bg-destructive hover:bg-destructive/90' : ''
-              }`}
-              onClick={() => isRecording ? undefined : startRecording()}
-              disabled={isSubmitting || !location}
-            >
-              <Mic className={`h-12 w-12 ${isRecording ? 'animate-pulse' : ''}`} />
-              <span className="text-sm">
-                {isRecording ? 'Recording...' : 'Hold to Report'}
-              </span>
-            </Button>
-            
-            {audioURL && (
-              <audio src={audioURL} controls className="w-full mt-2" />
+            {!isRecording ? (
+              <Button
+                size="lg"
+                className="w-48 h-48 rounded-full flex flex-col items-center justify-center gap-2"
+                onClick={startRecording}
+                disabled={isSubmitting || !location}
+              >
+                <Mic className="h-12 w-12" />
+                <span className="text-sm">Start Recording</span>
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="w-48 h-48 bg-destructive text-white rounded-full flex flex-col items-center justify-center gap-2"
+                onClick={stopRecording}
+              >
+                <Square className="h-12 w-12" />
+                <span className="text-sm">Stop Recording</span>
+              </Button>
             )}
           </div>
         </div>
