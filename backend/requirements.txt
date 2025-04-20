@@ -1,0 +1,12 @@
+flask
+flask_pymongo
+flask_cors
+geopandas
+numpy
+pandas
+scikit-learn
+osmnx
+networkx
+geopy
+shapely
+pyarrow

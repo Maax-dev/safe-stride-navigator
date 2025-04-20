@@ -20,6 +20,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [destination, setDestination] = useState<string>("");
   const [mapError, setMapError] = useState<string | null>(null);
+  const [routeLine, setRouteLine] = useState<L.Polyline | null>(null);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -103,114 +104,53 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
     };
   }, [showHeatmap]);
 
-  const calculateRoute = () => {
-    var listOfLists=[]
-    const fetchInitialData = async () => {
-      try {
-        const response = await fetch('http://127.0.0.1:5000/safe_path?destination='+destination+'&start_lat='+userLocation[0]+'&start_lon='+userLocation[1]);
-        if (!response.ok) throw new Error('Failed to fetch initial data');
-        const data = await response.json();
-        console.log("Fetched data:", data); // optional: handle data as needed
-        for(var i=0;i<data.route.length;i++){
-          let temp=[]
-          temp.push(data.route[i][0])
-          temp.push(data.route[i][1])
-          listOfLists.push(temp)
-        }
-        
-      } catch (error) {
-        console.error("API fetch error:", error);
-        alert(error)
-      }
-    };
-    fetchInitialData();
+
+
+  const calculateRoute = async () => {
     if (!mapInstanceRef.current || !userLocation || !destination) return;
     setIsLoading(true);
-    var vari=[[37.8044256, -122.2711217],
-    [37.8043196, -122.2711889],
-    [37.8042334, -122.2712434],
-    [37.8036339, -122.2716226],
-    [37.8035573, -122.2716703],
-    [37.8030321, -122.2720032],
-    [37.8029476, -122.2720567],
-    [37.8028669, -122.2721061],
-    [37.8023492, -122.2724334],
-    [37.8022601, -122.2724916],
-    [37.8021942, -122.2725786],
-    [37.8018607, -122.2727914],
-    [37.8016762, -122.272906],
-    [37.8015838, -122.2729634],
-    [37.8015032, -122.2730135],
-    [37.8008973, -122.2733905],
-    [37.8002171, -122.2738351],
-    [37.7995337, -122.2742622],
-    [37.7989205, -122.2746495],
-    [37.7988219, -122.2747118],
-    [37.7987541, -122.2747536],
-    [37.7981615, -122.2751239],
-    [37.7981188, -122.2750181],
-    [37.7980191, -122.2748041],
-    [37.7978175, -122.2744054],
-    [37.797778, -122.2744282],
-    [37.7976172, -122.2740284],
-    [37.7974934, -122.2740897],
-    [37.797206, -122.2742645],
-    [37.7970987, -122.2743464],
-    [37.7970108, -122.274392],
-    [37.7968862, -122.274332],
-    [37.7962734, -122.274712],
-    [37.7955823, -122.2751414]];
-    console.log(vari === listOfLists)
-    console.log(vari)
-    console.log(listOfLists)
-    const simulatedRoute: L.LatLngExpression[] = [[37.8044256, -122.2711217],
-    [37.8043196, -122.2711889],
-    [37.8042334, -122.2712434],
-    [37.8036339, -122.2716226],
-    [37.8035573, -122.2716703],
-    [37.8030321, -122.2720032],
-    [37.8029476, -122.2720567],
-    [37.8028669, -122.2721061],
-    [37.8023492, -122.2724334],
-    [37.8022601, -122.2724916],
-    [37.8021942, -122.2725786],
-    [37.8018607, -122.2727914],
-    [37.8016762, -122.272906],
-    [37.8015838, -122.2729634],
-    [37.8015032, -122.2730135],
-    [37.8008973, -122.2733905],
-    [37.8002171, -122.2738351],
-    [37.7995337, -122.2742622],
-    [37.7989205, -122.2746495],
-    [37.7988219, -122.2747118],
-    [37.7987541, -122.2747536],
-    [37.7981615, -122.2751239],
-    [37.7981188, -122.2750181],
-    [37.7980191, -122.2748041],
-    [37.7978175, -122.2744054],
-    [37.797778, -122.2744282],
-    [37.7976172, -122.2740284],
-    [37.7974934, -122.2740897],
-    [37.797206, -122.2742645],
-    [37.7970987, -122.2743464],
-    [37.7970108, -122.274392],
-    [37.7968862, -122.274332],
-    [37.7962734, -122.274712],
-    [37.7955823, -122.2751414]]
   
-    const routeLine = L.polyline(simulatedRoute, {
-      color: '#33C3F0',
-      weight: 5,
-      opacity: 0.8
-    }).addTo(mapInstanceRef.current);
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:5000/safe_path?destination=${encodeURIComponent(destination)}&start_lat=${userLocation[0]}&start_lon=${userLocation[1]}`
+      );
   
-    mapInstanceRef.current.fitBounds(routeLine.getBounds(), {
-      padding: [100, 100]
-    });
+      if (!response.ok) throw new Error('Failed to fetch route');
+  
+      const data = await response.json();
+      console.log("Fetched data:", data);
+  
+      const listOfCoords: L.LatLngExpression[] = data.route.map(
+        (coord: [number, number]) => [coord[0], coord[1]]
+      );
+  
+      if (listOfCoords.length === 0) throw new Error("Empty route");
+  
+      // Remove existing route line if present
+      if (routeLine) {
+        mapInstanceRef.current.removeLayer(routeLine);
+      }
+  
+      const newLine = L.polyline(listOfCoords, {
+        color: '#33C3F0',
+        weight: 5,
+        opacity: 0.8
+      }).addTo(mapInstanceRef.current);
+  
+      mapInstanceRef.current.fitBounds(newLine.getBounds(), {
+        padding: [100, 100]
+      });
+  
+      setRouteLine(newLine);  // Save current line in state
+    } catch (error) {
+      console.error("API fetch error:", error);
+      alert(`Route error: ${error}`);
+    }
   
     setIsLoading(false);
   };
-
+  
+  
   const renderMap = () => {
     if (mapError) {
       return (
