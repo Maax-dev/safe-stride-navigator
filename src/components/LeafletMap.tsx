@@ -347,9 +347,9 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   
       if (mapInstanceRef.current) {
         const newLine = L.polyline(listOfCoords, {
-          color: '#33C3F0',
-          weight: 5,
-          opacity: 0.8
+          color: '#0000FF',
+          weight: 9,
+          opacity: 0.9
         }).addTo(mapInstanceRef.current);
     
         mapInstanceRef.current.fitBounds(newLine.getBounds(), {
