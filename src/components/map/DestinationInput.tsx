@@ -66,23 +66,23 @@ const DestinationInput: React.FC<DestinationInputProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className="absolute top-4 left-4 right-4 z-[1000] bg-white shadow-md rounded-lg p-2 flex gap-2"
+      className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-white shadow-md rounded-lg p-2 flex gap-2 w-[80%] max-w-md"
     >
       <div className="flex flex-col w-full relative">
         <Input
           value={destination}
           onChange={handleChange}
           placeholder="Enter a destination..."
-          className="w-full"
+          className="w-full text-sm h-8"
           autoComplete="off"
         />
         {suggestions.length > 0 && (
-          <ul className="absolute top-full mt-1 w-full bg-white border border-blue-500 rounded shadow z-[1000] max-h-40 overflow-auto">
+          <ul className="absolute top-full mt-1 w-full bg-white border border-input rounded shadow-lg z-[1000] max-h-40 overflow-auto">
             {suggestions.map((s, idx) => (
               <li
                 key={idx}
                 onClick={() => handleSuggestionClick(s)}
-                className="px-4 py-2 hover:bg-blue-100 cursor-pointer text-sm"
+                className="px-3 py-1.5 hover:bg-accent cursor-pointer text-sm"
               >
                 {s}
               </li>
@@ -90,7 +90,7 @@ const DestinationInput: React.FC<DestinationInputProps> = ({
           </ul>
         )}
       </div>
-      <Button type="submit" disabled={isLoading}>
+      <Button type="submit" disabled={isLoading} size="sm" className="h-8">
         Go
       </Button>
     </form>

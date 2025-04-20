@@ -101,20 +101,13 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     if (!mapReady) return;
     
     const defaultLocation: [number, number] = [37.8044, -122.2711];
+    console.log("Initializing map with default location:", defaultLocation);
     
-    if (userLocation) {
-      console.log("User location is already stored, initializing map with stored location:", userLocation);
-      initializeMap(userLocation[0], userLocation[1]);
-    } else if (locationPermissionStatus === 'prompt') {
-      console.log("No stored location, requesting permission");
-      requestLocationPermission();
-    } else {
-      console.log("Using default location due to denied permission");
-      localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(defaultLocation));
-      setUserLocation(defaultLocation);
-      initializeMap(defaultLocation[0], defaultLocation[1]);
-    }
-  }, [mapReady, userLocation, locationPermissionStatus]);
+    localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(defaultLocation));
+    setUserLocation(defaultLocation);
+    initializeMap(defaultLocation[0], defaultLocation[1]);
+    setLocationPermissionStatus('granted');
+  }, [mapReady]);
 
   const requestLocationPermission = () => {
     setIsLoading(true);
@@ -199,7 +192,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         try {
           const map = L.map(mapContainer, {
             attributionControl: true,
-            zoomControl: true,
+            zoomControl: false,
             doubleClickZoom: true,
             scrollWheelZoom: true,
             dragging: true,
@@ -208,6 +201,10 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19
+          }).addTo(map);
+          
+          L.control.zoom({
+            position: 'topright'
           }).addTo(map);
           
           mapInstanceRef.current = map;
