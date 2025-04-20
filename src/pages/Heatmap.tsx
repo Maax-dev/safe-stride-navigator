@@ -38,7 +38,7 @@ const Heatmap = () => {
           </p>
         </div>
         
-        <div className="h-full" style={{ minHeight: "calc(100vh - 200px)" }}>
+        <div className="h-full flex flex-col bg-background" style={{ minHeight: "calc(100vh - 200px)" }}>
           <MapView showHeatmap={true} />
         </div>
       </div>

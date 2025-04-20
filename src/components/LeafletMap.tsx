@@ -24,13 +24,20 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
   const [isMapInitialized, setIsMapInitialized] = useState(false);
   const [locationPermissionStatus, setLocationPermissionStatus] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>('prompt');
   const [mapReady, setMapReady] = useState(false);
+  const mapContainerMounted = useRef(false);
 
-  // This effect ensures the map container is ready before initializing
+  // This effect ensures we have a proper DOM reference before attempting to initialize
   useEffect(() => {
     // Short delay to ensure DOM is ready
     const timer = setTimeout(() => {
-      setMapReady(true);
-    }, 100);
+      console.log("Checking map container reference:", mapRef.current);
+      if (mapRef.current) {
+        mapContainerMounted.current = true;
+        setMapReady(true);
+      } else {
+        console.error("Map container reference is still not available after timeout");
+      }
+    }, 500);
     
     return () => clearTimeout(timer);
   }, []);
@@ -80,8 +87,8 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
     console.log("Initializing map with coordinates:", latitude, longitude);
     
     try {
-      if (!mapRef.current) {
-        console.error("Map container reference is not available");
+      if (!mapRef.current || !mapContainerMounted.current) {
+        console.error("Map container reference is not available:", mapRef.current);
         setMapError("Map container not available");
         setIsLoading(false);
         return;
@@ -168,7 +175,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
 
   // Initialize map effect when mapReady becomes true
   useEffect(() => {
-    if (mapReady) {
+    if (mapReady && mapContainerMounted.current) {
       console.log("Map container is ready, requesting location permission");
       requestLocationPermission();
     }
@@ -324,12 +331,13 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
         ref={mapRef} 
         className="w-full h-full rounded-lg"
         style={{ minHeight: "500px" }} 
+        id="map-container"
       />
     );
   };
 
   return (
-    <div className="w-full h-full flex-grow relative" style={{ minHeight: "500px" }}>
+    <div className="w-full h-full flex-grow relative" style={{ minHeight: "500px", height: "calc(100vh - 250px)" }}>
       {isLoading && (
         <div className="absolute inset-0 bg-background/80 z-50 flex items-center justify-center">
           <div className="flex flex-col items-center">
@@ -339,7 +347,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
         </div>
       )}
       
-      <div className="w-full h-full">
+      <div className="w-full h-full flex flex-col">
         {renderMap()}
       </div>
       
