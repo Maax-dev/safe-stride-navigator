@@ -25,6 +25,9 @@ from sklearn.preprocessing import MinMaxScaler
 import os
 from report_classifier import classify_incident, update_graph_with_report
 from threading import Thread
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 
 import os
@@ -53,7 +56,7 @@ G = ox.graph_from_place(GRAPH_PLACE, network_type='walk')
 edges = ox.graph_to_gdfs(G, nodes=False).reset_index()
 edges["edge_id"] = edges.apply(lambda row: f"{row['u']}_{row['v']}_{row['key']}", axis=1)
 nodes = ox.graph_to_gdfs(G, edges=False)
-
+emergency_contact = ''
 # Load and preprocess crime data
 #url = "/Users/spartan/Desktop/desktop/USA/hackathon/safe-stride-navigator/backend/crime_rate.csv"
 #crime_df = pd.read_csv(url)
@@ -175,6 +178,7 @@ def login():
     password = data.get("password")
 
     user = mongo.db.users.find_one({"email": email})
+    emergency_contact=user['emergency_contact']['email']
     if not user or not check_password(password, user['password_hash']):
         return jsonify({"error": "Invalid credentials"}), 401
 
@@ -309,6 +313,42 @@ def report_audio():
 
         Thread(target=run_update).start()
 
+        # Email configuration
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = "gptmax3002@gmail.com"
+        sender_password = "PuneethR0h!t@120"  # Use an App Password if using Gmail
+        receiver_email = emergency_contact
+        subject = "Emergency Report"
+        body = (
+        f"Hello,\n\n"
+        "This is an email to inform you about an emergency report submitted by someone who has you as an emergency contact. "
+        "Please check your application for more information.\n\n"
+        f'The transcript of the audio shared is: "{transcript}"\n\n'
+        f"The location is: {lat}, {lon}\n\n"
+        "Regards,\n"
+        "Safe Stride Safety Team"
+        )
+        # Create the email
+        msg = MIMEMultipart()
+        msg["From"] = sender_email
+        msg["To"] = receiver_email
+        msg["Subject"] = subject
+
+        msg.attach(MIMEText(body, "plain"))
+
+        # Send the email
+        try:
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()  # Secure the connection
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+            print("Email sent successfully!")
+        except Exception as e:
+            print("Failed to send email:", str(e))
+        finally:
+            server.quit()
+
         # Step 4: Return fast response
         return jsonify({
             "incident_type": incident_type,
@@ -377,4 +417,3 @@ def heatmap_data():
 
 if __name__ == "__main__":
     app.run(debug=True)
-    
