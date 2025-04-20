@@ -56,45 +56,46 @@ const HeatmapLayer = ({ centerCoords, map }: HeatmapLayerProps) => {
       const heatmapOverlay = L.layerGroup();
       heatmapLayerRef.current = heatmapOverlay;
       
-      const points = generateDummyCrimeData(centerCoords[0], centerCoords[1], 100);
-      
-      // Add markers to the layer group
-      points.forEach(point => {
-        const intensity = point.properties.intensity;
-        
-        const getColor = (value: number): string => {
-          if (value > 0.7) return '#d73027';
-          if (value > 0.4) return '#fc8d59';
-          if (value > 0.2) return '#fee090';
-          return '#e0f3f8';
-        };
-        
-        try {
-          if (map && map._loaded) {
-            const marker = L.circleMarker(
-              [point.geometry.coordinates[0], point.geometry.coordinates[1]], 
-              {
-                radius: 8 + (intensity * 12),
-                fillColor: getColor(intensity),
-                color: 'rgba(0,0,0,0.1)',
-                weight: 1,
-                opacity: 0.8,
-                fillOpacity: 0.6
-              }
-            );
+      // Short delay to ensure map is ready
+      setTimeout(() => {
+        if (map && map._loaded) {
+          try {
+            const points = generateDummyCrimeData(centerCoords[0], centerCoords[1], 100);
             
-            marker.bindPopup(`Reported ${point.properties.type}`);
-            heatmapOverlay.addLayer(marker);
+            // Add markers to the layer group
+            points.forEach(point => {
+              const intensity = point.properties.intensity;
+              
+              const getColor = (value: number): string => {
+                if (value > 0.7) return '#d73027';
+                if (value > 0.4) return '#fc8d59';
+                if (value > 0.2) return '#fee090';
+                return '#e0f3f8';
+              };
+              
+              const marker = L.circleMarker(
+                [point.geometry.coordinates[0], point.geometry.coordinates[1]], 
+                {
+                  radius: 8 + (intensity * 12),
+                  fillColor: getColor(intensity),
+                  color: 'rgba(0,0,0,0.1)',
+                  weight: 1,
+                  opacity: 0.8,
+                  fillOpacity: 0.6
+                }
+              );
+              
+              marker.bindPopup(`Reported ${point.properties.type}`);
+              heatmapOverlay.addLayer(marker);
+            });
+            
+            // Only add the layer if map is mounted and valid
+            heatmapOverlay.addTo(map);
+          } catch (err) {
+            console.error("Error creating markers:", err);
           }
-        } catch (err) {
-          console.error("Error creating marker:", err);
         }
-      });
-      
-      // Only add the layer if map is mounted and valid
-      if (map && map._loaded) {
-        heatmapOverlay.addTo(map);
-      }
+      }, 500);
     } catch (error) {
       console.error("Error in HeatmapLayer:", error);
     }

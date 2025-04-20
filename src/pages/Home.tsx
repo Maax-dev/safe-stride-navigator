@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MapView from '@/components/MapView';
@@ -21,17 +21,6 @@ const Home = () => {
     navigate('/');
   };
 
-  // Add effect to ensure Leaflet gets proper container dimensions
-  useEffect(() => {
-    // Small timeout to ensure DOM is fully rendered
-    const timer = setTimeout(() => {
-      // Dispatch resize event to help Leaflet recalculate dimensions
-      window.dispatchEvent(new Event('resize'));
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -51,7 +40,7 @@ const Home = () => {
       </header>
       
       {/* Main Content */}
-      <div className="flex-1 container mx-auto p-4 flex flex-col">
+      <div className="flex-1 container mx-auto p-4 flex flex-col h-full">
         <Tabs defaultValue="map" className="w-full h-full flex flex-col">
           <TabsList className="grid grid-cols-2 mb-4">
             <TabsTrigger value="map" className="flex gap-1 items-center">
@@ -64,7 +53,7 @@ const Home = () => {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="map" className="flex-grow flex" style={{ minHeight: "calc(100vh - 200px)" }}>
+          <TabsContent value="map" className="flex-grow flex h-full" style={{ minHeight: "calc(100vh - 200px)" }}>
             <MapView />
           </TabsContent>
           

@@ -30,7 +30,7 @@ const Heatmap = () => {
       </header>
       
       {/* Main Content */}
-      <div className="flex-1 container mx-auto p-4">
+      <div className="flex-1 container mx-auto p-4 h-full" style={{ minHeight: "calc(100vh - 100px)" }}>
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">
             Viewing crime hotspots in a 20 mile radius of your location.
@@ -38,7 +38,9 @@ const Heatmap = () => {
           </p>
         </div>
         
-        <MapView showHeatmap={true} />
+        <div className="h-full" style={{ minHeight: "calc(100vh - 200px)" }}>
+          <MapView showHeatmap={true} />
+        </div>
       </div>
     </div>
   );

@@ -23,6 +23,17 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
   const [routeLine, setRouteLine] = useState<L.Polyline | null>(null);
   const [isMapInitialized, setIsMapInitialized] = useState(false);
   const [locationPermissionStatus, setLocationPermissionStatus] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>('prompt');
+  const [mapReady, setMapReady] = useState(false);
+
+  // This effect ensures the map container is ready before initializing
+  useEffect(() => {
+    // Short delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      setMapReady(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const requestLocationPermission = () => {
     setIsLoading(true);
@@ -88,7 +99,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
         setUserLocation([latitude, longitude]);
       }
       
-      console.log("Creating map instance");
+      console.log("Creating map instance with container:", mapRef.current);
       const map = L.map(mapRef.current, {
         attributionControl: true,
         zoomControl: true,
@@ -155,10 +166,12 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
     }
   };
 
-  // Initialize map effect
+  // Initialize map effect when mapReady becomes true
   useEffect(() => {
-    console.log("Initial useEffect running, requesting location permission");
-    requestLocationPermission();
+    if (mapReady) {
+      console.log("Map container is ready, requesting location permission");
+      requestLocationPermission();
+    }
     
     return () => {
       if (mapInstanceRef.current) {
@@ -175,7 +188,22 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
         }
       }
     };
-  }, []);
+  }, [mapReady]);
+
+  // Additional effect to handle map resize when map tab becomes visible
+  useEffect(() => {
+    const handleResize = () => {
+      if (mapInstanceRef.current && isMapInitialized) {
+        console.log("Window resized, invalidating map size");
+        setTimeout(() => {
+          mapInstanceRef.current?.invalidateSize();
+        }, 100);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMapInitialized]);
 
   // Handle map reload
   const reloadMap = () => {
