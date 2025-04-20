@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import L from 'leaflet';
 
 interface HeatmapLayerProps {
@@ -10,9 +10,9 @@ interface HeatmapLayerProps {
 const HeatmapLayer = ({ centerCoords, map }: HeatmapLayerProps) => {
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Safety check to ensure map exists and is valid
-    if (!map || !map.getContainer || typeof map.getContainer !== 'function') {
+    if (!map || !map._loaded) {
       console.error("Map is not properly initialized in HeatmapLayer");
       return;
     }
@@ -45,7 +45,9 @@ const HeatmapLayer = ({ centerCoords, map }: HeatmapLayerProps) => {
 
       // Clean up previous layer if it exists
       if (heatmapLayerRef.current) {
-        map.removeLayer(heatmapLayerRef.current);
+        if (map.hasLayer(heatmapLayerRef.current)) {
+          map.removeLayer(heatmapLayerRef.current);
+        }
       }
 
       // Create a new layer group
@@ -65,7 +67,6 @@ const HeatmapLayer = ({ centerCoords, map }: HeatmapLayerProps) => {
           return '#e0f3f8';
         };
         
-        // Only create markers if map is valid
         try {
           const marker = L.circleMarker(
             [point.geometry.coordinates[0], point.geometry.coordinates[1]], 
@@ -97,8 +98,10 @@ const HeatmapLayer = ({ centerCoords, map }: HeatmapLayerProps) => {
     return () => {
       // Safety cleanup
       try {
-        if (heatmapLayerRef.current && map && map.hasLayer && typeof map.hasLayer === 'function' && map.hasLayer(heatmapLayerRef.current)) {
-          map.removeLayer(heatmapLayerRef.current);
+        if (heatmapLayerRef.current && map && map.hasLayer && typeof map.hasLayer === 'function') {
+          if (map.hasLayer(heatmapLayerRef.current)) {
+            map.removeLayer(heatmapLayerRef.current);
+          }
           heatmapLayerRef.current = null;
         }
       } catch (err) {

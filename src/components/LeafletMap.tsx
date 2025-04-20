@@ -19,32 +19,39 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
   const [destination, setDestination] = useState<string>("");
   const [mapError, setMapError] = useState<string | null>(null);
   const [routeLine, setRouteLine] = useState<L.Polyline | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMapInitialized, setIsMapInitialized] = useState(false);
 
-  // Handle transitions between map modes
+  // Handle map initialization
   useEffect(() => {
-    if (mapRef.current && isMapInitialized) {
-      setIsTransitioning(true);
-      setTimeout(() => setIsTransitioning(false), 300);
-    }
-  }, [showHeatmap, isMapInitialized]);
-
-  // Initialize the map
-  useEffect(() => {
-    // Only create a map if none exists yet and container is available
+    console.log("Map initialization effect running");
     if (!mapInstanceRef.current && mapRef.current) {
-      console.log("Preparing to initialize map");
+      console.log("Initializing map");
       
       const initMap = () => {
         try {
+          if (mapInstanceRef.current) {
+            console.log("Map already initialized, cleaning up first");
+            mapInstanceRef.current.remove();
+            mapInstanceRef.current = null;
+          }
+          
           // MOCKED for testing
           const latitude = 37.8044;
           const longitude = -122.2711;
           setUserLocation([latitude, longitude]);
 
-          console.log("Creating map instance");
-          const map = L.map(mapRef.current!).setView([latitude, longitude], 14);
+          console.log("Creating map instance with container:", mapRef.current);
+          if (!mapRef.current) {
+            throw new Error("Map container not available");
+          }
+          
+          const map = L.map(mapRef.current, {
+            attributionControl: true,
+            zoomControl: true,
+            doubleClickZoom: true,
+            scrollWheelZoom: true,
+            dragging: true,
+          }).setView([latitude, longitude], 14);
           
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -53,6 +60,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
           
           mapInstanceRef.current = map;
           
+          // Add leaflet styles
           if (!document.getElementById('leaflet-styles')) {
             const style = document.createElement('style');
             style.id = 'leaflet-styles';
@@ -87,30 +95,35 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
           // Force a re-render by invalidating map size
           setTimeout(() => {
             if (mapInstanceRef.current) {
+              console.log("Invalidating map size");
               mapInstanceRef.current.invalidateSize();
             }
-          }, 100);
+          }, 300);
           
           setMapError(null);
           setIsMapInitialized(true);
-          setIsLoading(false);
           console.log("Map successfully initialized");
         } catch (error) {
           console.error("Map initialization error:", error);
           setMapError("Failed to initialize map. Please try again later.");
+        } finally {
           setIsLoading(false);
         }
       };
       
       // Use setTimeout to ensure the container is fully rendered
-      setTimeout(initMap, 100);
+      const timer = setTimeout(initMap, 300);
+      return () => clearTimeout(timer);
     }
-    
+  }, []);
+
+  // Cleanup on component unmount
+  useEffect(() => {
     return () => {
       if (mapInstanceRef.current) {
-        console.log("Cleaning up map instance");
+        console.log("Cleaning up map instance on unmount");
         try {
-          if (routeLine) {
+          if (routeLine && mapInstanceRef.current && mapInstanceRef.current.hasLayer(routeLine)) {
             mapInstanceRef.current.removeLayer(routeLine);
           }
           mapInstanceRef.current.remove();
@@ -121,15 +134,52 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
         }
       }
     };
-  }, []); // Empty dependency array to run only once
+  }, []);
 
-  // Update map display when showHeatmap prop changes
-  useEffect(() => {
+  // Handle map reload
+  const reloadMap = () => {
+    console.log("Reloading map");
+    setIsLoading(true);
+    setMapError(null);
+    
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.invalidateSize();
+      try {
+        mapInstanceRef.current.remove();
+      } catch (error) {
+        console.error("Error removing map:", error);
+      }
+      mapInstanceRef.current = null;
     }
-  }, [showHeatmap]);
+    
+    setTimeout(() => {
+      if (mapRef.current && !mapInstanceRef.current) {
+        try {
+          const latitude = 37.8044;
+          const longitude = -122.2711;
+          setUserLocation([latitude, longitude]);
+          
+          const map = L.map(mapRef.current).setView([latitude, longitude], 14);
+          
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+          }).addTo(map);
+          
+          mapInstanceRef.current = map;
+          setIsMapInitialized(true);
+          console.log("Map successfully reloaded");
+        } catch (error) {
+          console.error("Map reload error:", error);
+          setMapError("Failed to reload map. Please try again later.");
+        }
+      } else {
+        setMapError("Could not find map container for reload");
+      }
+      setIsLoading(false);
+    }, 500);
+  };
 
+  // Calculate route function
   const calculateRoute = async () => {
     if (!mapInstanceRef.current || !userLocation || !destination) return;
     setIsLoading(true);
@@ -177,6 +227,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
     setIsLoading(false);
   };
 
+  // Render map or error state
   const renderMap = () => {
     if (mapError) {
       return (
@@ -188,18 +239,18 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
           <p className="text-sm text-muted-foreground text-center mb-4">
             Please check your location permissions or try reloading the page.
           </p>
-          <Button onClick={() => window.location.reload()}>
+          <Button onClick={reloadMap}>
             Reload Map
           </Button>
         </div>
       );
     }
 
-    return <div ref={mapRef} className="w-full h-full rounded-lg" style={{ minHeight: "500px" }} />;
+    return <div ref={mapRef} className="w-full h-full rounded-lg" />;
   };
 
   return (
-    <div className="w-full h-full flex-grow relative">
+    <div className="w-full h-full flex-grow relative" style={{ minHeight: "500px" }}>
       {isLoading && (
         <div className="absolute inset-0 bg-background/80 z-50 flex items-center justify-center">
           <div className="flex flex-col items-center">
@@ -209,7 +260,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
         </div>
       )}
       
-      <div className={`w-full h-full transition-opacity duration-300 ${isTransitioning ? 'opacity-50' : 'opacity-100'}`}>
+      <div className="w-full h-full">
         {renderMap()}
       </div>
       
