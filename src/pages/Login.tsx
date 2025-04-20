@@ -21,14 +21,12 @@ const Login = () => {
   
   // Check if user is already logged in
   useEffect(() => {
-    const unsubscribe = onAuthChanged((user) => {
-      if (user) {
-        navigate('/home');
-      }
-    });
-    
-    return () => unsubscribe();
+    const user = localStorage.getItem('safeStrideUser');
+    if (user) {
+      navigate('/home');
+    }
   }, [navigate]);
+  
   
   const handleRequestLocation = () => {
     navigator.geolocation.getCurrentPosition(
