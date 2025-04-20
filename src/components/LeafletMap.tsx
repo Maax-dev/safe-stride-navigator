@@ -1,5 +1,4 @@
-
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { AlertTriangle } from 'lucide-react';
@@ -7,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import DestinationInput from './map/DestinationInput';
 import MapMarker from './map/MapMarker';
 import HeatmapLayer from './map/HeatmapLayer';
-
 
 interface LeafletMapProps {
   showHeatmap?: boolean;
@@ -21,6 +19,14 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
   const [destination, setDestination] = useState<string>("");
   const [mapError, setMapError] = useState<string | null>(null);
   const [routeLine, setRouteLine] = useState<L.Polyline | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  useEffect(() => {
+    if (mapRef.current) {
+      setIsTransitioning(true);
+      setTimeout(() => setIsTransitioning(false), 300);
+    }
+  }, [showHeatmap]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -104,8 +110,6 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
     };
   }, [showHeatmap]);
 
-
-
   const calculateRoute = async () => {
     if (!mapInstanceRef.current || !userLocation || !destination) return;
     setIsLoading(true);
@@ -149,8 +153,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
   
     setIsLoading(false);
   };
-  
-  
+
   const renderMap = () => {
     if (mapError) {
       return (
@@ -183,16 +186,16 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
         </div>
       )}
       
-      {renderMap()}
+      <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-50' : 'opacity-100'}`}>
+        {renderMap()}
+      </div>
       
-      {!showHeatmap && !mapError && mapInstanceRef.current && (
-        <DestinationInput
-          destination={destination}
-          setDestination={setDestination}
-          onCalculateRoute={calculateRoute}
-          isLoading={isLoading}
-        />
-      )}
+      <DestinationInput
+        destination={destination}
+        setDestination={setDestination}
+        onCalculateRoute={calculateRoute}
+        isLoading={isLoading}
+      />
 
       {mapInstanceRef.current && userLocation && (
         <MapMarker

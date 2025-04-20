@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MapView from '@/components/MapView';
 import IncidentReporter from '@/components/IncidentReporter';
-import { Map, Flag, Navigation, Mic } from "lucide-react";
+import { Navigation, Flag } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
@@ -21,7 +20,6 @@ const Home = () => {
     navigate('/');
   };
 
-  
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -38,13 +36,12 @@ const Home = () => {
             </Button>
           </div>
         </div>
-
       </header>
       
       {/* Main Content */}
       <div className="flex-1 container mx-auto p-4">
         <Tabs defaultValue="map" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-4">
+          <TabsList className="grid grid-cols-2 mb-4">
             <TabsTrigger value="map" className="flex gap-1 items-center">
               <Navigation className="h-4 w-4" />
               <span>Navigate</span>
@@ -53,28 +50,14 @@ const Home = () => {
               <Flag className="h-4 w-4" />
               <span>Report</span>
             </TabsTrigger>
-            <TabsTrigger value="heatmap" className="flex gap-1 items-center">
-              <Map className="h-4 w-4" />
-              <span>Heatmap</span>
-            </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="map">
+          <TabsContent value="map" className="h-[calc(100vh-12rem)]">
             <MapView />
           </TabsContent>
           
           <TabsContent value="report">
             <IncidentReporter />
-          </TabsContent>
-          
-          <TabsContent value="heatmap">
-            <div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Viewing crime hotspots in a 20 mile radius of your location.
-                Red areas indicate higher concentrations of reported incidents.
-              </p>
-              <MapView showHeatmap={true} />
-            </div>
           </TabsContent>
         </Tabs>
       </div>
