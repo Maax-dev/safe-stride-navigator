@@ -17,7 +17,7 @@ const MapView: React.FC<MapViewProps> = ({ showHeatmap: initialShowHeatmap }) =>
   }, [initialShowHeatmap]);
 
   return (
-    <div className="relative w-full h-full" style={{ minHeight: "600px", display: "flex", flexDirection: "column" }}>
+    <div className="relative w-full h-full flex flex-col" style={{ minHeight: "600px" }}>
       <LeafletMap showHeatmap={showHeatmap} />
       <ViewToggle showHeatmap={showHeatmap} onToggle={setShowHeatmap} />
     </div>

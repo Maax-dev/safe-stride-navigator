@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MapView from '@/components/MapView';
@@ -20,6 +20,17 @@ const Home = () => {
     localStorage.removeItem('safeStrideToken'); // if stored
     navigate('/');
   };
+
+  // Add effect to ensure Leaflet gets proper container dimensions
+  useEffect(() => {
+    // Small timeout to ensure DOM is fully rendered
+    const timer = setTimeout(() => {
+      // Dispatch resize event to help Leaflet recalculate dimensions
+      window.dispatchEvent(new Event('resize'));
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

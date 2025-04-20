@@ -21,9 +21,11 @@ const HeatmapLayer = ({ centerCoords, map }: HeatmapLayerProps) => {
       const generateDummyCrimeData = (lat: number, lng: number, count: number) => {
         const features = [];
         for (let i = 0; i < count; i++) {
+          // Randomize the position around the center
           const angle = Math.random() * Math.PI * 2;
           const distance = 0.02 * Math.pow(Math.random(), 0.5);
           
+          // Create feature with random type and intensity
           features.push({
             type: 'Feature',
             properties: {
@@ -68,20 +70,22 @@ const HeatmapLayer = ({ centerCoords, map }: HeatmapLayerProps) => {
         };
         
         try {
-          const marker = L.circleMarker(
-            [point.geometry.coordinates[0], point.geometry.coordinates[1]], 
-            {
-              radius: 8 + (intensity * 12),
-              fillColor: getColor(intensity),
-              color: 'rgba(0,0,0,0.1)',
-              weight: 1,
-              opacity: 0.8,
-              fillOpacity: 0.6
-            }
-          );
-          
-          marker.bindPopup(`Reported ${point.properties.type}`);
-          heatmapOverlay.addLayer(marker);
+          if (map && map._loaded) {
+            const marker = L.circleMarker(
+              [point.geometry.coordinates[0], point.geometry.coordinates[1]], 
+              {
+                radius: 8 + (intensity * 12),
+                fillColor: getColor(intensity),
+                color: 'rgba(0,0,0,0.1)',
+                weight: 1,
+                opacity: 0.8,
+                fillOpacity: 0.6
+              }
+            );
+            
+            marker.bindPopup(`Reported ${point.properties.type}`);
+            heatmapOverlay.addLayer(marker);
+          }
         } catch (err) {
           console.error("Error creating marker:", err);
         }
