@@ -383,7 +383,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         <Button onClick={requestLocationPermission} className="mb-2">
           Share My Location
         </Button>
-        <Button 
+        <Button
           variant="ghost" 
           onClick={() => {
             const defaultLocation: [number, number] = [37.8044, -122.2711];
