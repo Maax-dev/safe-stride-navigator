@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -20,14 +21,17 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
   const [mapError, setMapError] = useState<string | null>(null);
   const [routeLine, setRouteLine] = useState<L.Polyline | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
 
+  // Handle transitions between map modes
   useEffect(() => {
-    if (mapRef.current) {
+    if (mapRef.current && isMapInitialized) {
       setIsTransitioning(true);
       setTimeout(() => setIsTransitioning(false), 300);
     }
-  }, [showHeatmap]);
+  }, [showHeatmap, isMapInitialized]);
 
+  // Initialize the map
   useEffect(() => {
     if (!mapRef.current) return;
     
@@ -40,7 +44,9 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
           setUserLocation([latitude, longitude]);
 
           try {
+            // Only create a new map if one doesn't exist
             if (!mapInstanceRef.current && mapRef.current) {
+              console.log("Initializing map");
               const map = L.map(mapRef.current).setView([latitude, longitude], 14);
               
               L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -81,7 +87,15 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
                 document.head.appendChild(style);
               }
               
+              // Force a re-render by invalidating map size
+              setTimeout(() => {
+                if (mapInstanceRef.current) {
+                  mapInstanceRef.current.invalidateSize();
+                }
+              }, 100);
+              
               setMapError(null);
+              setIsMapInitialized(true);
             }
             
             setIsLoading(false);
@@ -103,12 +117,22 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
     initMap();
     
     return () => {
+      console.log("Cleaning up map instance");
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
+        // Cleanup all layers before removing the map
+        try {
+          if (routeLine) {
+            mapInstanceRef.current.removeLayer(routeLine);
+          }
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+          setIsMapInitialized(false);
+        } catch (error) {
+          console.error("Error cleaning up map:", error);
+        }
       }
     };
-  }, [showHeatmap]);
+  }, []);
 
   const calculateRoute = async () => {
     if (!mapInstanceRef.current || !userLocation || !destination) return;
@@ -130,22 +154,25 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
   
       if (listOfCoords.length === 0) throw new Error("Empty route");
   
-      // Remove existing route line if present
-      if (routeLine) {
+      // Remove existing route line if present and map exists
+      if (routeLine && mapInstanceRef.current) {
         mapInstanceRef.current.removeLayer(routeLine);
       }
   
-      const newLine = L.polyline(listOfCoords, {
-        color: '#33C3F0',
-        weight: 5,
-        opacity: 0.8
-      }).addTo(mapInstanceRef.current);
-  
-      mapInstanceRef.current.fitBounds(newLine.getBounds(), {
-        padding: [100, 100]
-      });
-  
-      setRouteLine(newLine);  // Save current line in state
+      // Only add new line if map still exists
+      if (mapInstanceRef.current) {
+        const newLine = L.polyline(listOfCoords, {
+          color: '#33C3F0',
+          weight: 5,
+          opacity: 0.8
+        }).addTo(mapInstanceRef.current);
+    
+        mapInstanceRef.current.fitBounds(newLine.getBounds(), {
+          padding: [100, 100]
+        });
+    
+        setRouteLine(newLine);  // Save current line in state
+      }
     } catch (error) {
       console.error("API fetch error:", error);
       alert(`Route error: ${error}`);
@@ -197,7 +224,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
         isLoading={isLoading}
       />
 
-      {mapInstanceRef.current && userLocation && (
+      {mapInstanceRef.current && userLocation && isMapInitialized && (
         <MapMarker
           position={userLocation}
           map={mapInstanceRef.current}
@@ -206,7 +233,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
         />
       )}
 
-      {showHeatmap && mapInstanceRef.current && userLocation && (
+      {showHeatmap && mapInstanceRef.current && userLocation && isMapInitialized && (
         <HeatmapLayer
           centerCoords={userLocation}
           map={mapInstanceRef.current}

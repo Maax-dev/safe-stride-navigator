@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LeafletMap from './LeafletMap';
 import ViewToggle from './map/ViewToggle';
 
@@ -7,8 +6,14 @@ interface MapViewProps {
   showHeatmap?: boolean;
 }
 
-const MapView: React.FC<MapViewProps> = () => {
-  const [showHeatmap, setShowHeatmap] = useState(false);
+const MapView: React.FC<MapViewProps> = ({ showHeatmap: initialShowHeatmap }) => {
+  const [showHeatmap, setShowHeatmap] = useState(initialShowHeatmap !== undefined ? initialShowHeatmap : false);
+  
+  useEffect(() => {
+    if (initialShowHeatmap !== undefined) {
+      setShowHeatmap(initialShowHeatmap);
+    }
+  }, [initialShowHeatmap]);
 
   return (
     <div className="relative w-full h-full">
