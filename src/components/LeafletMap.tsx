@@ -15,6 +15,7 @@ interface LeafletMapProps {
 }
 
 const LOCATION_STORAGE_KEY = 'safeStride_userLocation';
+const LOCATION_PROMPTED_KEY = 'safeStride_locationPrompted';
 
 const LeafletMap: React.FC<LeafletMapProps> = ({ 
   showHeatmap = false, 
@@ -33,11 +34,17 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const [routeLine, setRouteLine] = useState<L.Polyline | null>(null);
   const [isMapInitialized, setIsMapInitialized] = useState(false);
   const [locationPermissionStatus, setLocationPermissionStatus] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>(
-    () => userLocation ? 'granted' : 'prompt'
+    () => {
+      if (localStorage.getItem(LOCATION_PROMPTED_KEY)) {
+        return localStorage.getItem(LOCATION_STORAGE_KEY) ? 'granted' : 'denied';
+      }
+      return 'prompt';
+    }
   );
   const [mapReady, setMapReady] = useState(false);
   const mapContainerMounted = useRef(false);
   const initAttempts = useRef(0);
+  const markerAttempts = useRef(0);
 
   useEffect(() => {
     console.log("Map component rendering, checking for map container");
@@ -91,25 +98,40 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   }, [isMounted, containerRef]);
 
   useEffect(() => {
-    if (mapReady && userLocation) {
+    if (!mapReady) return;
+    
+    const defaultLocation: [number, number] = [37.8044, -122.2711];
+    
+    if (userLocation) {
       console.log("User location is already stored, initializing map with stored location:", userLocation);
       initializeMap(userLocation[0], userLocation[1]);
-    } else if (mapReady) {
-      console.log("Map container is ready but no stored location, requesting permission");
+    } else if (locationPermissionStatus === 'prompt') {
+      console.log("No stored location, requesting permission");
       requestLocationPermission();
+    } else {
+      console.log("Using default location due to denied permission");
+      localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(defaultLocation));
+      setUserLocation(defaultLocation);
+      initializeMap(defaultLocation[0], defaultLocation[1]);
     }
-  }, [mapReady, userLocation]);
+  }, [mapReady, userLocation, locationPermissionStatus]);
 
   const requestLocationPermission = () => {
     setIsLoading(true);
     console.log("Requesting location permission...");
+    
+    localStorage.setItem(LOCATION_PROMPTED_KEY, 'true');
     
     if (!navigator.geolocation) {
       console.error("Geolocation is not supported by your browser");
       setLocationPermissionStatus('unavailable');
       setMapError("Geolocation is not supported by your browser");
       setIsLoading(false);
-      initializeMap(37.8044, -122.2711);
+      
+      const defaultLocation: [number, number] = [37.8044, -122.2711];
+      localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(defaultLocation));
+      setUserLocation(defaultLocation);
+      initializeMap(defaultLocation[0], defaultLocation[1]);
       return;
     }
     
@@ -132,7 +154,12 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
       (error) => {
         console.error("Location permission error:", error);
         setLocationPermissionStatus('denied');
-        initializeMap(37.8044, -122.2711);
+        
+        const defaultLocation: [number, number] = [37.8044, -122.2711];
+        localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(defaultLocation));
+        setUserLocation(defaultLocation);
+        initializeMap(defaultLocation[0], defaultLocation[1]);
+        
         toast({
           variant: "destructive",
           title: "Location access denied",
@@ -162,82 +189,127 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         mapInstanceRef.current = null;
       }
       
-      if (!userLocation) {
-        setUserLocation([latitude, longitude]);
-      }
-      
       console.log("Creating map instance with container:", mapContainer);
       
       if (mapContainer.style.height === '') {
         mapContainer.style.height = '500px';
       }
       
-      const map = L.map(mapContainer, {
-        attributionControl: true,
-        zoomControl: true,
-        doubleClickZoom: true,
-        scrollWheelZoom: true,
-        dragging: true,
-      }).setView([latitude, longitude], 14);
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
-      }).addTo(map);
-      
-      mapInstanceRef.current = map;
-      
-      if (!document.getElementById('leaflet-styles')) {
-        const style = document.createElement('style');
-        style.id = 'leaflet-styles';
-        style.innerHTML = `
-          .user-marker {
-            background-color: transparent;
+      setTimeout(() => {
+        try {
+          const map = L.map(mapContainer, {
+            attributionControl: true,
+            zoomControl: true,
+            doubleClickZoom: true,
+            scrollWheelZoom: true,
+            dragging: true,
+          }).setView([latitude, longitude], 14);
+          
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+          }).addTo(map);
+          
+          mapInstanceRef.current = map;
+          
+          if (!document.getElementById('leaflet-styles')) {
+            const style = document.createElement('style');
+            style.id = 'leaflet-styles';
+            style.innerHTML = `
+              .user-marker {
+                background-color: transparent;
+              }
+              .pulse {
+                border-radius: 50%;
+                height: 14px;
+                width: 14px;
+                background: rgba(51, 195, 240, 1);
+                border: 3px solid rgba(255, 255, 255, 0.8);
+                box-shadow: 0 0 0 rgba(51, 195, 240, 0.4);
+                animation: pulse 2s infinite;
+              }
+              @keyframes pulse {
+                0% {
+                  box-shadow: 0 0 0 0 rgba(51, 195, 240, 0.4);
+                }
+                70% {
+                  box-shadow: 0 0 0 10px rgba(51, 195, 240, 0);
+                }
+                100% {
+                  box-shadow: 0 0 0 0 rgba(51, 195, 240, 0);
+                }
+              }
+            `;
+            document.head.appendChild(style);
           }
-          .pulse {
-            border-radius: 50%;
-            height: 14px;
-            width: 14px;
-            background: rgba(51, 195, 240, 1);
-            border: 3px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 0 0 rgba(51, 195, 240, 0.4);
-            animation: pulse 2s infinite;
-          }
-          @keyframes pulse {
-            0% {
-              box-shadow: 0 0 0 0 rgba(51, 195, 240, 0.4);
-            }
-            70% {
-              box-shadow: 0 0 0 10px rgba(51, 195, 240, 0);
-            }
-            100% {
-              box-shadow: 0 0 0 0 rgba(51, 195, 240, 0);
-            }
-          }
-        `;
-        document.head.appendChild(style);
-      }
+          
+          setMapError(null);
+          
+          const resizeIntervals = [100, 500, 1000, 2000];
+          resizeIntervals.forEach(delay => {
+            setTimeout(() => {
+              if (mapInstanceRef.current) {
+                console.log(`Invalidating map size after ${delay}ms`);
+                mapInstanceRef.current.invalidateSize(true);
+              }
+            }, delay);
+          });
+          
+          setIsMapInitialized(true);
+          console.log("Map successfully initialized");
+          
+        } catch (error) {
+          console.error("Error during map initialization:", error);
+          setMapError("Failed to initialize map: " + String(error));
+        } finally {
+          setIsLoading(false);
+        }
+      }, 200);
       
-      setMapError(null);
-      setIsMapInitialized(true);
-      console.log("Map successfully initialized");
-      
-      const resizeIntervals = [300, 800, 1500];
-      resizeIntervals.forEach(delay => {
-        setTimeout(() => {
-          if (mapInstanceRef.current) {
-            console.log(`Invalidating map size after ${delay}ms`);
-            mapInstanceRef.current.invalidateSize();
-          }
-        }, delay);
-      });
     } catch (error) {
       console.error("Map initialization error:", error);
       setMapError("Failed to initialize map. Please try again later.");
-    } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (mapInstanceRef.current && isMapInitialized) {
+        console.log("Window resized, invalidating map size");
+        mapInstanceRef.current.invalidateSize(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    const resizeTimer = setTimeout(() => {
+      handleResize();
+    }, 1000);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimer);
+    };
+  }, [isMapInitialized]);
+
+  useEffect(() => {
+    return () => {
+      if (mapInstanceRef.current) {
+        console.log("Cleaning up map instance on unmount");
+        try {
+          if (routeLine && mapInstanceRef.current && mapInstanceRef.current.hasLayer(routeLine)) {
+            mapInstanceRef.current.removeLayer(routeLine);
+          }
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+          setIsMapInitialized(false);
+        } catch (error) {
+          console.error("Error cleaning up map:", error);
+        }
+      }
+    };
+  }, []);
 
   const reloadMap = () => {
     console.log("Reloading map");
@@ -300,44 +372,6 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    return () => {
-      if (mapInstanceRef.current) {
-        console.log("Cleaning up map instance on unmount");
-        try {
-          if (routeLine && mapInstanceRef.current && mapInstanceRef.current.hasLayer(routeLine)) {
-            mapInstanceRef.current.removeLayer(routeLine);
-          }
-          mapInstanceRef.current.remove();
-          mapInstanceRef.current = null;
-          setIsMapInitialized(false);
-        } catch (error) {
-          console.error("Error cleaning up map:", error);
-        }
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (mapInstanceRef.current && isMapInitialized) {
-        console.log("Window resized, invalidating map size");
-        mapInstanceRef.current.invalidateSize();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    
-    const resizeTimer = setTimeout(() => {
-      handleResize();
-    }, 1000);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(resizeTimer);
-    };
-  }, [isMapInitialized]);
-
   const renderLocationRequest = () => {
     return (
       <div className="w-full h-full rounded-lg border-2 border-dashed border-muted-foreground/50 flex flex-col items-center justify-center p-6">
@@ -356,6 +390,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
           onClick={() => {
             const defaultLocation: [number, number] = [37.8044, -122.2711];
             localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(defaultLocation));
+            localStorage.setItem(LOCATION_PROMPTED_KEY, 'true');
             setUserLocation(defaultLocation);
             setLocationPermissionStatus('granted');
             initializeMap(defaultLocation[0], defaultLocation[1]);
@@ -385,7 +420,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   };
 
   const renderMap = () => {
-    if (!userLocation && locationPermissionStatus === 'prompt') {
+    if (locationPermissionStatus === 'prompt' && !userLocation) {
       return renderLocationRequest();
     }
     
@@ -401,6 +436,13 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         id="map-container"
       />
     );
+  };
+
+  const isMapReadyForMarkers = () => {
+    return isMapInitialized && 
+           mapInstanceRef.current && 
+           mapInstanceRef.current._container && 
+           mapInstanceRef.current._loaded;
   };
 
   return (
@@ -425,7 +467,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         isLoading={isLoading}
       />
 
-      {mapInstanceRef.current && userLocation && isMapInitialized && (
+      {isMapReadyForMarkers() && userLocation && (
         <MapMarker
           position={userLocation}
           map={mapInstanceRef.current}
@@ -434,7 +476,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         />
       )}
 
-      {showHeatmap && mapInstanceRef.current && userLocation && isMapInitialized && (
+      {showHeatmap && isMapReadyForMarkers() && userLocation && (
         <HeatmapLayer
           centerCoords={userLocation}
           map={mapInstanceRef.current}

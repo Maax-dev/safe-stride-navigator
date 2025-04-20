@@ -13,25 +13,16 @@ const Home = () => {
     return user ? JSON.parse(user).name : 'User';
   });
   const [activeTab, setActiveTab] = useState("map");
-  const [mapMounted, setMapMounted] = useState(false);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set the mapMounted state to true after a short delay
-    if (activeTab === "map") {
-      const timer = setTimeout(() => {
-        setMapMounted(true);
-        
-        // Force a resize event to ensure map renders properly
-        window.dispatchEvent(new Event('resize'));
-      }, 100);
-      return () => clearTimeout(timer);
+    // Set a flag in localStorage to prevent repeated location prompts
+    if (!localStorage.getItem('safeStride_locationPrompted')) {
+      localStorage.setItem('safeStride_locationPrompted', 'true');
     }
-  }, [activeTab]);
-
-  // On component mount, force resize event for proper map rendering
-  useEffect(() => {
+    
+    // Force a resize event for proper map rendering
     const resizeTimer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
     }, 500);
@@ -41,7 +32,7 @@ const Home = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('safeStrideUser');
-    localStorage.removeItem('safeStrideToken'); // if stored
+    localStorage.removeItem('safeStrideToken');
     navigate('/');
   };
 
@@ -88,7 +79,7 @@ const Home = () => {
             style={{ 
               minHeight: "calc(100vh - 200px)",
               height: "100%",
-              display: activeTab === "map" ? "block" : "none" 
+              display: activeTab === "map" ? "flex" : "none"
             }}
           >
             {activeTab === "map" && <MapView />}

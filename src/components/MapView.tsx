@@ -9,7 +9,7 @@ interface MapViewProps {
 
 const MapView: React.FC<MapViewProps> = ({ showHeatmap: initialShowHeatmap }) => {
   const [showHeatmap, setShowHeatmap] = useState(initialShowHeatmap !== undefined ? initialShowHeatmap : false);
-  const mapMountedRef = useRef(false);
+  const [mapMounted, setMapMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -17,17 +17,17 @@ const MapView: React.FC<MapViewProps> = ({ showHeatmap: initialShowHeatmap }) =>
       setShowHeatmap(initialShowHeatmap);
     }
     
-    // Mark component as mounted
-    mapMountedRef.current = true;
-    
-    // Dispatch resize event when component mounts to ensure proper dimensions
+    // Mark component as mounted after a short delay to ensure DOM is ready
     const timer = setTimeout(() => {
+      setMapMounted(true);
+      
+      // Dispatch resize event when component mounts to ensure proper dimensions
       window.dispatchEvent(new Event('resize'));
     }, 500);
     
     return () => {
       clearTimeout(timer);
-      mapMountedRef.current = false;
+      setMapMounted(false);
     };
   }, [initialShowHeatmap]);
 
@@ -40,7 +40,7 @@ const MapView: React.FC<MapViewProps> = ({ showHeatmap: initialShowHeatmap }) =>
     >
       <LeafletMap 
         showHeatmap={showHeatmap} 
-        isMounted={mapMountedRef.current} 
+        isMounted={mapMounted} 
         containerRef={containerRef} 
       />
       <ViewToggle showHeatmap={showHeatmap} onToggle={setShowHeatmap} />
