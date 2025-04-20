@@ -5,12 +5,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MapView from '@/components/MapView';
 import IncidentReporter from '@/components/IncidentReporter';
 import { Map, Flag, Navigation, Mic } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
   const [userName, setUserName] = useState<string>(() => {
     const user = localStorage.getItem('safeStrideUser');
     return user ? JSON.parse(user).name : 'User';
   });
+
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('safeStrideUser');
+    localStorage.removeItem('safeStrideToken'); // if stored
+    navigate('/');
+  };
+
   
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -21,10 +31,14 @@ const Home = () => {
             <Navigation className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold">Safe Stride</h1>
           </div>
-          <div className="text-sm text-muted-foreground">
-            Welcome, {userName}
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">Welcome, {userName}</span>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              Logout
+            </Button>
           </div>
         </div>
+
       </header>
       
       {/* Main Content */}

@@ -6,7 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Navigation } from "lucide-react";
-import { registerUser, loginUser, onAuthChanged } from '@/firebase/auth';
+import { registerUser, loginUser, onAuthChanged } from '@/api/auth';
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -20,14 +21,12 @@ const Login = () => {
   
   // Check if user is already logged in
   useEffect(() => {
-    const unsubscribe = onAuthChanged((user) => {
-      if (user) {
-        navigate('/home');
-      }
-    });
-    
-    return () => unsubscribe();
+    const user = localStorage.getItem('safeStrideUser');
+    if (user) {
+      navigate('/home');
+    }
   }, [navigate]);
+  
   
   const handleRequestLocation = () => {
     navigator.geolocation.getCurrentPosition(
