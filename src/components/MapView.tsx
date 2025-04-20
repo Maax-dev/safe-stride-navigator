@@ -10,6 +10,7 @@ interface MapViewProps {
 const MapView: React.FC<MapViewProps> = ({ showHeatmap: initialShowHeatmap }) => {
   const [showHeatmap, setShowHeatmap] = useState(initialShowHeatmap !== undefined ? initialShowHeatmap : false);
   const mapMountedRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     if (initialShowHeatmap !== undefined) {
@@ -31,8 +32,17 @@ const MapView: React.FC<MapViewProps> = ({ showHeatmap: initialShowHeatmap }) =>
   }, [initialShowHeatmap]);
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-background" style={{ minHeight: "600px", height: "calc(100vh - 200px)" }}>
-      <LeafletMap showHeatmap={showHeatmap} isMounted={mapMountedRef.current} />
+    <div 
+      ref={containerRef}
+      className="relative w-full h-full flex flex-col bg-background" 
+      style={{ minHeight: "600px", height: "calc(100vh - 200px)" }}
+      id="map-view-container"
+    >
+      <LeafletMap 
+        showHeatmap={showHeatmap} 
+        isMounted={mapMountedRef.current} 
+        containerRef={containerRef} 
+      />
       <ViewToggle showHeatmap={showHeatmap} onToggle={setShowHeatmap} />
     </div>
   );

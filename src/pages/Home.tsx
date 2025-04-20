@@ -22,10 +22,22 @@ const Home = () => {
     if (activeTab === "map") {
       const timer = setTimeout(() => {
         setMapMounted(true);
+        
+        // Force a resize event to ensure map renders properly
+        window.dispatchEvent(new Event('resize'));
       }, 100);
       return () => clearTimeout(timer);
     }
   }, [activeTab]);
+
+  // On component mount, force resize event for proper map rendering
+  useEffect(() => {
+    const resizeTimer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 500);
+    
+    return () => clearTimeout(resizeTimer);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('safeStrideUser');
@@ -75,7 +87,8 @@ const Home = () => {
             className="flex-grow h-full" 
             style={{ 
               minHeight: "calc(100vh - 200px)",
-              height: "100%" 
+              height: "100%",
+              display: activeTab === "map" ? "block" : "none" 
             }}
           >
             {activeTab === "map" && <MapView />}

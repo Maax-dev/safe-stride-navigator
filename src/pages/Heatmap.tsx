@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import MapView from '@/components/MapView';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { ArrowLeft, Map } from "lucide-react";
 
 const Heatmap = () => {
   const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Force a resize event after the component mounts
   useEffect(() => {
@@ -46,11 +47,15 @@ const Heatmap = () => {
           </p>
         </div>
         
-        <div className="h-full flex flex-col bg-background" style={{ 
-          minHeight: "calc(100vh - 200px)",
-          display: "flex",
-          flexDirection: "column"
-        }}>
+        <div 
+          ref={containerRef}
+          className="h-full flex flex-col bg-background" 
+          style={{ 
+            minHeight: "calc(100vh - 200px)",
+            display: "flex",
+            flexDirection: "column"
+          }}
+        >
           <MapView showHeatmap={true} />
         </div>
       </div>
