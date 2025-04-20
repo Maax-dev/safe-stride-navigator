@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import LeafletMap from './LeafletMap';
 import ViewToggle from './map/ViewToggle';
@@ -16,7 +17,7 @@ const MapView: React.FC<MapViewProps> = ({ showHeatmap: initialShowHeatmap }) =>
   }, [initialShowHeatmap]);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full flex-grow flex flex-col">
       <LeafletMap showHeatmap={showHeatmap} />
       <ViewToggle showHeatmap={showHeatmap} onToggle={setShowHeatmap} />
     </div>

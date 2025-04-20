@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -33,93 +32,83 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
 
   // Initialize the map
   useEffect(() => {
-    if (!mapRef.current) return;
-    
-    const initMap = () => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
+    // Only create a map if none exists yet and container is available
+    if (!mapInstanceRef.current && mapRef.current) {
+      console.log("Preparing to initialize map");
+      
+      const initMap = () => {
+        try {
           // MOCKED for testing
           const latitude = 37.8044;
           const longitude = -122.2711;
           setUserLocation([latitude, longitude]);
 
-          try {
-            // Only create a new map if one doesn't exist
-            if (!mapInstanceRef.current && mapRef.current) {
-              console.log("Initializing map");
-              const map = L.map(mapRef.current).setView([latitude, longitude], 14);
-              
-              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19
-              }).addTo(map);
-              
-              mapInstanceRef.current = map;
-              
-              if (!document.getElementById('leaflet-styles')) {
-                const style = document.createElement('style');
-                style.id = 'leaflet-styles';
-                style.innerHTML = `
-                  .user-marker {
-                    background-color: transparent;
-                  }
-                  .pulse {
-                    border-radius: 50%;
-                    height: 14px;
-                    width: 14px;
-                    background: rgba(51, 195, 240, 1);
-                    border: 3px solid rgba(255, 255, 255, 0.8);
-                    box-shadow: 0 0 0 rgba(51, 195, 240, 0.4);
-                    animation: pulse 2s infinite;
-                  }
-                  @keyframes pulse {
-                    0% {
-                      box-shadow: 0 0 0 0 rgba(51, 195, 240, 0.4);
-                    }
-                    70% {
-                      box-shadow: 0 0 0 10px rgba(51, 195, 240, 0);
-                    }
-                    100% {
-                      box-shadow: 0 0 0 0 rgba(51, 195, 240, 0);
-                    }
-                  }
-                `;
-                document.head.appendChild(style);
+          console.log("Creating map instance");
+          const map = L.map(mapRef.current!).setView([latitude, longitude], 14);
+          
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+          }).addTo(map);
+          
+          mapInstanceRef.current = map;
+          
+          if (!document.getElementById('leaflet-styles')) {
+            const style = document.createElement('style');
+            style.id = 'leaflet-styles';
+            style.innerHTML = `
+              .user-marker {
+                background-color: transparent;
               }
-              
-              // Force a re-render by invalidating map size
-              setTimeout(() => {
-                if (mapInstanceRef.current) {
-                  mapInstanceRef.current.invalidateSize();
+              .pulse {
+                border-radius: 50%;
+                height: 14px;
+                width: 14px;
+                background: rgba(51, 195, 240, 1);
+                border: 3px solid rgba(255, 255, 255, 0.8);
+                box-shadow: 0 0 0 rgba(51, 195, 240, 0.4);
+                animation: pulse 2s infinite;
+              }
+              @keyframes pulse {
+                0% {
+                  box-shadow: 0 0 0 0 rgba(51, 195, 240, 0.4);
                 }
-              }, 100);
-              
-              setMapError(null);
-              setIsMapInitialized(true);
-            }
-            
-            setIsLoading(false);
-          } catch (error) {
-            console.error("Map initialization error:", error);
-            setMapError("Failed to initialize map. Please try again later.");
-            setIsLoading(false);
+                70% {
+                  box-shadow: 0 0 0 10px rgba(51, 195, 240, 0);
+                }
+                100% {
+                  box-shadow: 0 0 0 0 rgba(51, 195, 240, 0);
+                }
+              }
+            `;
+            document.head.appendChild(style);
           }
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          setMapError("Unable to get your location. Please check your location permissions.");
+          
+          // Force a re-render by invalidating map size
+          setTimeout(() => {
+            if (mapInstanceRef.current) {
+              mapInstanceRef.current.invalidateSize();
+            }
+          }, 100);
+          
+          setMapError(null);
+          setIsMapInitialized(true);
           setIsLoading(false);
-          setUserLocation([40.7128, -74.006]);
+          console.log("Map successfully initialized");
+        } catch (error) {
+          console.error("Map initialization error:", error);
+          setMapError("Failed to initialize map. Please try again later.");
+          setIsLoading(false);
         }
-      );
-    };
-    
-    initMap();
+      };
+      
+      // Use setTimeout to ensure the container is fully rendered
+      setTimeout(initMap, 100);
+    }
     
     return () => {
-      console.log("Cleaning up map instance");
       if (mapInstanceRef.current) {
-        // Cleanup all layers before removing the map
+        console.log("Cleaning up map instance");
         try {
           if (routeLine) {
             mapInstanceRef.current.removeLayer(routeLine);
@@ -132,7 +121,14 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
         }
       }
     };
-  }, []);
+  }, []); // Empty dependency array to run only once
+
+  // Update map display when showHeatmap prop changes
+  useEffect(() => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.invalidateSize();
+    }
+  }, [showHeatmap]);
 
   const calculateRoute = async () => {
     if (!mapInstanceRef.current || !userLocation || !destination) return;
@@ -199,11 +195,11 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
       );
     }
 
-    return <div ref={mapRef} className="w-full h-full rounded-lg" />;
+    return <div ref={mapRef} className="w-full h-full rounded-lg" style={{ minHeight: "500px" }} />;
   };
 
   return (
-    <div className="w-full h-[calc(100vh-140px)] relative">
+    <div className="w-full h-full flex-grow relative">
       {isLoading && (
         <div className="absolute inset-0 bg-background/80 z-50 flex items-center justify-center">
           <div className="flex flex-col items-center">
@@ -213,7 +209,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
         </div>
       )}
       
-      <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-50' : 'opacity-100'}`}>
+      <div className={`w-full h-full transition-opacity duration-300 ${isTransitioning ? 'opacity-50' : 'opacity-100'}`}>
         {renderMap()}
       </div>
       
