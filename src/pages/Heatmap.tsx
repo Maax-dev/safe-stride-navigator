@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import MapView from '@/components/MapView';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,14 @@ import { ArrowLeft, Map } from "lucide-react";
 
 const Heatmap = () => {
   const navigate = useNavigate();
+  
+  // Force a resize event after the component mounts
+  useEffect(() => {
+    const resizeTimer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 500);
+    return () => clearTimeout(resizeTimer);
+  }, []);
   
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -38,7 +46,11 @@ const Heatmap = () => {
           </p>
         </div>
         
-        <div className="h-full flex flex-col bg-background" style={{ minHeight: "calc(100vh - 200px)" }}>
+        <div className="h-full flex flex-col bg-background" style={{ 
+          minHeight: "calc(100vh - 200px)",
+          display: "flex",
+          flexDirection: "column"
+        }}>
           <MapView showHeatmap={true} />
         </div>
       </div>

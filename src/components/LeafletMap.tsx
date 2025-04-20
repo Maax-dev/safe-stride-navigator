@@ -11,9 +11,10 @@ import { toast } from '@/components/ui/use-toast';
 
 interface LeafletMapProps {
   showHeatmap?: boolean;
+  isMounted?: boolean;
 }
 
-const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
+const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false, isMounted = false }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -25,22 +26,47 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
   const [locationPermissionStatus, setLocationPermissionStatus] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>('prompt');
   const [mapReady, setMapReady] = useState(false);
   const mapContainerMounted = useRef(false);
+  const initAttempts = useRef(0);
 
-  // This effect ensures we have a proper DOM reference before attempting to initialize
+  // Create the map container and ensure it's ready
   useEffect(() => {
-    // Short delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      console.log("Checking map container reference:", mapRef.current);
-      if (mapRef.current) {
-        mapContainerMounted.current = true;
-        setMapReady(true);
-      } else {
-        console.error("Map container reference is still not available after timeout");
-      }
-    }, 500);
-    
-    return () => clearTimeout(timer);
+    if (mapRef.current) {
+      console.log("Map container exists on initial render");
+      mapContainerMounted.current = true;
+      setMapReady(true);
+    } else {
+      console.log("Map container doesn't exist yet, will check again");
+      
+      // Try multiple times with increasing delays
+      const checkInterval = setInterval(() => {
+        initAttempts.current += 1;
+        console.log(`Checking map container reference (attempt ${initAttempts.current}):`, mapRef.current);
+        
+        if (mapRef.current) {
+          console.log("Map container found!");
+          clearInterval(checkInterval);
+          mapContainerMounted.current = true;
+          setMapReady(true);
+        } else if (initAttempts.current >= 5) {
+          console.error("Failed to find map container after multiple attempts");
+          clearInterval(checkInterval);
+          setMapError("Could not initialize map container");
+          setIsLoading(false);
+        }
+      }, 1000);
+      
+      return () => clearInterval(checkInterval);
+    }
   }, []);
+  
+  // If parent reports component is mounted, double-check our container
+  useEffect(() => {
+    if (isMounted && !mapContainerMounted.current && mapRef.current) {
+      console.log("Parent reports mounted, container exists now");
+      mapContainerMounted.current = true;
+      setMapReady(true);
+    }
+  }, [isMounted]);
 
   const requestLocationPermission = () => {
     setIsLoading(true);
@@ -87,7 +113,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
     console.log("Initializing map with coordinates:", latitude, longitude);
     
     try {
-      if (!mapRef.current || !mapContainerMounted.current) {
+      if (!mapRef.current) {
         console.error("Map container reference is not available:", mapRef.current);
         setMapError("Map container not available");
         setIsLoading(false);
@@ -158,13 +184,16 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
       setIsMapInitialized(true);
       console.log("Map successfully initialized");
       
-      // Force a re-render by invalidating map size
-      setTimeout(() => {
-        if (mapInstanceRef.current) {
-          console.log("Invalidating map size");
-          mapInstanceRef.current.invalidateSize();
-        }
-      }, 300);
+      // Force a re-render by invalidating map size - do this multiple times
+      const resizeIntervals = [300, 800, 1500];
+      resizeIntervals.forEach(delay => {
+        setTimeout(() => {
+          if (mapInstanceRef.current) {
+            console.log(`Invalidating map size after ${delay}ms`);
+            mapInstanceRef.current.invalidateSize();
+          }
+        }, delay);
+      });
     } catch (error) {
       console.error("Map initialization error:", error);
       setMapError("Failed to initialize map. Please try again later.");
@@ -175,8 +204,8 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
 
   // Initialize map effect when mapReady becomes true
   useEffect(() => {
-    if (mapReady && mapContainerMounted.current) {
-      console.log("Map container is ready, requesting location permission");
+    if (mapReady && mapRef.current) {
+      console.log("Map container is ready and exists, requesting location permission");
       requestLocationPermission();
     }
     
@@ -209,7 +238,16 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false }) => {
     };
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    
+    // Also trigger resize after a delay
+    const resizeTimer = setTimeout(() => {
+      handleResize();
+    }, 1000);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimer);
+    };
   }, [isMapInitialized]);
 
   // Handle map reload

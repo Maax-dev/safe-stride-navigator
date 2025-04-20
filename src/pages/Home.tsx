@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MapView from '@/components/MapView';
@@ -12,8 +12,20 @@ const Home = () => {
     const user = localStorage.getItem('safeStrideUser');
     return user ? JSON.parse(user).name : 'User';
   });
+  const [activeTab, setActiveTab] = useState("map");
+  const [mapMounted, setMapMounted] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Set the mapMounted state to true after a short delay
+    if (activeTab === "map") {
+      const timer = setTimeout(() => {
+        setMapMounted(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab]);
 
   const handleLogout = () => {
     localStorage.removeItem('safeStrideUser');
@@ -41,7 +53,12 @@ const Home = () => {
       
       {/* Main Content */}
       <div className="flex-1 container mx-auto p-4 flex flex-col h-full">
-        <Tabs defaultValue="map" className="w-full h-full flex flex-col">
+        <Tabs 
+          defaultValue="map" 
+          className="w-full h-full flex flex-col"
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
           <TabsList className="grid grid-cols-2 mb-4">
             <TabsTrigger value="map" className="flex gap-1 items-center">
               <Navigation className="h-4 w-4" />
@@ -53,8 +70,15 @@ const Home = () => {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="map" className="flex-grow flex h-full" style={{ minHeight: "calc(100vh - 200px)" }}>
-            <MapView />
+          <TabsContent 
+            value="map" 
+            className="flex-grow h-full" 
+            style={{ 
+              minHeight: "calc(100vh - 200px)",
+              height: "100%" 
+            }}
+          >
+            {activeTab === "map" && <MapView />}
           </TabsContent>
           
           <TabsContent value="report">
