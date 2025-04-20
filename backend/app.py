@@ -215,38 +215,41 @@ def get_route():
     if not (start_lat and start_lon and destination):
         return jsonify({"error": "Missing parameters"}), 400
 
-    geolocator = Nominatim(user_agent="nav_app")
-    location = geolocator.geocode(destination)
-    if not location:
-        return jsonify({"error": "Destination not found"}), 404
-
-    end_lat, end_lon = location.latitude, location.longitude
-
     try:
-        orig = ox.nearest_nodes(G, X=start_lon, Y=start_lat)
-        dest = ox.nearest_nodes(G, X=end_lon, Y=end_lat)
+        geolocator = Nominatim(user_agent="nav_app", timeout=10)  # Increased timeout to 10 seconds
+        location = geolocator.geocode(destination)
+        if not location:
+            return jsonify({"error": "Destination not found"}), 404
 
-        path = nx.shortest_path(G, orig, dest, weight='weight')
+        end_lat, end_lon = location.latitude, location.longitude
 
-        full_coords = []
+        try:
+            orig = ox.nearest_nodes(G, X=start_lon, Y=start_lat)
+            dest = ox.nearest_nodes(G, X=end_lon, Y=end_lat)
 
-        for u, v in zip(path[:-1], path[1:]):
-            data = G.get_edge_data(u, v)
-            if data:
-                # Get the first edge with geometry or fallback to straight line
-                edge_data = list(data.values())[0]
-                if 'geometry' in edge_data:
-                    full_coords += list(edge_data['geometry'].coords)
-                else:
-                    # Fallback to straight line
-                    full_coords += [(G.nodes[u]['x'], G.nodes[u]['y']), (G.nodes[v]['x'], G.nodes[v]['y'])]
+            path = nx.shortest_path(G, orig, dest, weight='weight')
 
-        # Flip (lon, lat) to (lat, lon)
-        latlon_coords = [[y, x] for (x, y) in full_coords]
+            full_coords = []
 
-        return jsonify({"route": latlon_coords})
+            for u, v in zip(path[:-1], path[1:]):
+                data = G.get_edge_data(u, v)
+                if data:
+                    # Get the first edge with geometry or fallback to straight line
+                    edge_data = list(data.values())[0]
+                    if 'geometry' in edge_data:
+                        full_coords += list(edge_data['geometry'].coords)
+                    else:
+                        # Fallback to straight line
+                        full_coords += [(G.nodes[u]['x'], G.nodes[u]['y']), (G.nodes[v]['x'], G.nodes[v]['y'])]
+
+            # Flip (lon, lat) to (lat, lon)
+            latlon_coords = [[y, x] for (x, y) in full_coords]
+
+            return jsonify({"route": latlon_coords})
+        except Exception as e:
+            return jsonify({"error": f"Error finding path: {str(e)}"}), 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Geocoding error: {str(e)}"}), 500
     
 
 @app.route("/add_user", methods=["POST"])

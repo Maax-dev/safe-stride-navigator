@@ -7,11 +7,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
-import Heatmap from "./pages/Heatmap";
 import NotFound from "./pages/NotFound";
 import SetupPage from "./pages/Setup";
 import Index from "./pages/Index";
-import LeafletMap from './components/LeafletMap';
+import Heatmap from "./pages/Heatmap";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -28,9 +27,8 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/home" element={<Home />} />
-              <Route path="/heatmap" element={<Heatmap />} />
               <Route path="/setup" element={<SetupPage />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="/heatmap" element={<Heatmap />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

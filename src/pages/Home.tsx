@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MapView from '@/components/MapView';
 import IncidentReporter from '@/components/IncidentReporter';
-import { Map, Flag, Navigation, Mic } from "lucide-react";
+import { Navigation, Flag } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
@@ -12,16 +12,30 @@ const Home = () => {
     const user = localStorage.getItem('safeStrideUser');
     return user ? JSON.parse(user).name : 'User';
   });
+  const [activeTab, setActiveTab] = useState("map");
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Set a flag in localStorage to prevent repeated location prompts
+    if (!localStorage.getItem('safeStride_locationPrompted')) {
+      localStorage.setItem('safeStride_locationPrompted', 'true');
+    }
+    
+    // Force a resize event for proper map rendering
+    const resizeTimer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 500);
+    
+    return () => clearTimeout(resizeTimer);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('safeStrideUser');
-    localStorage.removeItem('safeStrideToken'); // if stored
+    localStorage.removeItem('safeStrideToken');
     navigate('/');
   };
 
-  
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -38,13 +52,17 @@ const Home = () => {
             </Button>
           </div>
         </div>
-
       </header>
       
       {/* Main Content */}
-      <div className="flex-1 container mx-auto p-4">
-        <Tabs defaultValue="map" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-4">
+      <div className="flex-1 container mx-auto p-4 flex flex-col h-full">
+        <Tabs 
+          defaultValue="map" 
+          className="w-full h-full flex flex-col"
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
+          <TabsList className="grid grid-cols-2 mb-4">
             <TabsTrigger value="map" className="flex gap-1 items-center">
               <Navigation className="h-4 w-4" />
               <span>Navigate</span>
@@ -53,28 +71,22 @@ const Home = () => {
               <Flag className="h-4 w-4" />
               <span>Report</span>
             </TabsTrigger>
-            <TabsTrigger value="heatmap" className="flex gap-1 items-center">
-              <Map className="h-4 w-4" />
-              <span>Heatmap</span>
-            </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="map">
-            <MapView />
+          <TabsContent 
+            value="map" 
+            className="flex-grow h-full" 
+            style={{ 
+              minHeight: "calc(100vh - 200px)",
+              height: "100%",
+              display: activeTab === "map" ? "flex" : "none"
+            }}
+          >
+            {activeTab === "map" && <MapView />}
           </TabsContent>
           
           <TabsContent value="report">
             <IncidentReporter />
-          </TabsContent>
-          
-          <TabsContent value="heatmap">
-            <div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Viewing crime hotspots in a 20 mile radius of your location.
-                Red areas indicate higher concentrations of reported incidents.
-              </p>
-              <MapView showHeatmap={true} />
-            </div>
           </TabsContent>
         </Tabs>
       </div>
