@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Switch } from "@/components/ui/switch";
-import { Map, Heatmap } from "lucide-react";
+import { Map, Activity } from "lucide-react";
 
 interface ViewToggleProps {
   showHeatmap: boolean;
@@ -17,7 +17,7 @@ const ViewToggle: React.FC<ViewToggleProps> = ({ showHeatmap, onToggle }) => {
         onCheckedChange={onToggle}
         className="data-[state=checked]:bg-primary"
       />
-      <Map className={`h-5 w-5 ${showHeatmap ? 'text-primary' : 'text-muted-foreground'}`} />
+      <Activity className={`h-5 w-5 ${showHeatmap ? 'text-primary' : 'text-muted-foreground'}`} />
     </div>
   );
 };
