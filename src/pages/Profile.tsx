@@ -1,14 +1,21 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateUserProfile } from '@/api/auth';
 import { toast } from "@/hooks/use-toast";
-import { UserRound } from "lucide-react";
+import { UserRound, Home, Navigation } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -19,10 +26,8 @@ const Profile = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load user data from localStorage
     const userData = localStorage.getItem('safeStrideUser');
     if (!userData) {
-      // If no token or missing userData, redirect to login
       if (!localStorage.getItem('token')) {
         navigate('/login');
         return;
@@ -47,7 +52,6 @@ const Profile = () => {
     setError(null);
 
     try {
-      // If userData doesn't exist in localStorage, create it now with current form values
       if (!localStorage.getItem('safeStrideUser')) {
         localStorage.setItem('safeStrideUser', JSON.stringify({
           email,
@@ -80,15 +84,37 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col p-4">
+      <div className="w-full max-w-md mx-auto mb-6">
+        <NavigationMenu>
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <NavigationMenuTrigger>Navigation</NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <div className="grid gap-3 p-4 w-[200px]">
+                  <Link to="/home" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md">
+                    <Home className="h-4 w-4" />
+                    <span>Home</span>
+                  </Link>
+                  <Link to="/heatmap" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md">
+                    <Navigation className="h-4 w-4" />
+                    <span>Heatmap</span>
+                  </Link>
+                </div>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
+      </div>
+
       {error && (
-        <Alert variant="destructive" className="mb-4 max-w-md w-full">
+        <Alert variant="destructive" className="mb-4 max-w-md mx-auto w-full">
           <AlertTitle>Update Failed</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md mx-auto">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <UserRound className="h-12 w-12 text-primary" />
