@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateUserProfile } from '@/api/auth';
 import { toast } from "@/hooks/use-toast";
-import { UserRound, ArrowLeft } from "lucide-react";
+import { UserRound } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -15,7 +15,6 @@ const Profile = () => {
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // Load user data from localStorage
@@ -25,25 +24,15 @@ const Profile = () => {
       return;
     }
 
-    try {
-      const user = JSON.parse(userData);
-      setEmail(user.email || '');
-      setContactName(user.emergency_contact?.name || '');
-      setContactEmail(user.emergency_contact?.email || '');
-    } catch (error) {
-      console.error("Error parsing user data:", error);
-      toast({
-        title: "Error",
-        description: "Could not load user profile data",
-        variant: "destructive",
-      });
-    }
+    const user = JSON.parse(userData);
+    setEmail(user.email || '');
+    setContactName(user.emergency_contact?.name || '');
+    setContactEmail(user.emergency_contact?.email || '');
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage(null);
 
     try {
       await updateUserProfile(email, contactName, contactEmail);
@@ -52,10 +41,9 @@ const Profile = () => {
         description: "Your profile has been successfully updated.",
       });
     } catch (error: any) {
-      setErrorMessage(error.message || "Failed to update profile. Please try again later.");
       toast({
         title: "Update Failed",
-        description: error.message || "Failed to update profile. Please try again later.",
+        description: error.message || "Failed to update profile",
         variant: "destructive",
       });
     } finally {
@@ -64,31 +52,15 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="flex items-center justify-between mb-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/home')}
-              className="flex items-center gap-1"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <div className="flex items-center justify-center">
-              <UserRound className="h-12 w-12 text-primary" />
-            </div>
+          <div className="flex items-center justify-center mb-4">
+            <UserRound className="h-12 w-12 text-primary" />
           </div>
           <CardTitle className="text-2xl text-center">Profile Settings</CardTitle>
         </CardHeader>
         <CardContent>
-          {errorMessage && (
-            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md mb-4 text-sm">
-              {errorMessage}
-            </div>
-          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

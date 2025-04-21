@@ -1,8 +1,5 @@
-
-// Set the BASE_URL based on the environment
-export const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-  ? "http://127.0.0.1:5000" 
-  : window.location.origin.replace('3000', '5000').replace('8080', '5000'); // Dynamically determine backend URL in production
+// Change the BASE_URL to local development server
+export const BASE_URL = "http://127.0.0.1:5000"; // Updated to use local backend and now exported
 
 export async function registerUser(
   email: string,
@@ -103,15 +100,11 @@ export async function updateUserProfile(
   if (!token) throw new Error("No authentication token found");
 
   try {
-    // Add logs to debug the connection
-    console.log(`Using backend URL: ${BASE_URL}`);
-    console.log(`Sending profile update to: ${BASE_URL}/update_profile`);
-    
     const res = await fetch(`${BASE_URL}/update_profile`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         email,
@@ -122,24 +115,10 @@ export async function updateUserProfile(
       })
     });
 
-    // Check response status first
+    const data = await res.json();
+    
     if (!res.ok) {
-      if (res.status === 404) {
-        throw new Error("Profile update endpoint not found. The server may need to be updated.");
-      } else {
-        throw new Error(`Server returned ${res.status}: ${res.statusText}`);
-      }
-    }
-    
-    // Only try to parse JSON if we have content
-    const contentType = res.headers.get("content-type");
-    let data;
-    
-    if (contentType && contentType.includes("application/json") && res.headers.get("content-length") !== "0") {
-      data = await res.json();
-    } else {
-      // For empty responses or non-JSON responses
-      data = { message: "Profile updated successfully" };
+      throw new Error(data.error || data.detail || "Failed to update profile");
     }
     
     // Update local storage with new details

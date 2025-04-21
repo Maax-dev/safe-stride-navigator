@@ -1,12 +1,12 @@
-
 import React, { useRef, useEffect } from 'react';
 import L from 'leaflet';
-import { BASE_URL } from '@/api/auth'; // Import BASE_URL from auth.ts
 
 interface HeatmapLayerProps {
   centerCoords: [number, number];
   map: L.Map;
 }
+
+const BASE_URL = "http://127.0.0.1:5000"; 
 
 const HeatmapLayer = ({ centerCoords, map }: HeatmapLayerProps) => {
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
