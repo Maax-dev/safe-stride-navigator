@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Navigation } from "lucide-react";
 import { registerUser, loginUser, onAuthChanged } from '@/api/auth';
+import { toast } from "@/hooks/use-toast";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -63,9 +65,34 @@ const Login = () => {
       } else {
         navigate('/home');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Authentication error:', err);
-      setError('Authentication failed. Please check your credentials and try again.');
+      
+      // Check for specific error messages
+      const errorMessage = err.message || 'Authentication failed';
+      
+      if (errorMessage.includes('User already exists') || errorMessage.includes('409')) {
+        toast({
+          title: "Account already exists",
+          description: "This email is already registered. Please try logging in instead.",
+          variant: "destructive",
+        });
+        setError('This email address is already registered. Please log in or use a different email.');
+      } else if (errorMessage.includes('Login failed')) {
+        toast({
+          title: "Login failed",
+          description: "Invalid email or password. Please check your credentials and try again.",
+          variant: "destructive",
+        });
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else {
+        toast({
+          title: "Authentication error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        setError(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +109,12 @@ const Login = () => {
             <h1 className="text-3xl font-bold">Safe Stride</h1>
             <p className="text-muted-foreground mt-2">Navigate safely with real-time safety data</p>
           </div>
+          
+          {error && (
+            <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
+              {error}
+            </div>
+          )}
           
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
@@ -164,7 +197,10 @@ const Login = () => {
           <div className="text-center">
             <button
               type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError(null); // Clear errors when switching modes
+              }}
               className="text-sm underline text-primary hover:text-primary/80"
             >
               {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
