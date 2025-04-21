@@ -1,5 +1,5 @@
 // Change the BASE_URL to local development server
-const BASE_URL = "http://127.0.0.1:5000"; // Updated to use local backend
+export const BASE_URL = "http://127.0.0.1:5000"; // Updated to use local backend and now exported
 
 export async function registerUser(
   email: string,

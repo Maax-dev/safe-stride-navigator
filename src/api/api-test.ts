@@ -22,6 +22,9 @@ export async function testBackendConnectivity() {
     
     // Check if /me endpoint is working
     const token = localStorage.getItem('token');
+    let authResStatus = false;
+    let userData = null;
+    
     if (token) {
       const authRes = await fetch(`${BASE_URL}/me`, {
         headers: {
@@ -30,7 +33,8 @@ export async function testBackendConnectivity() {
       });
       
       if (authRes.ok) {
-        const userData = await authRes.json();
+        userData = await authRes.json();
+        authResStatus = true;
         console.log("✅ Auth /me endpoint working:", userData);
       } else {
         console.error("❌ Auth /me endpoint failed:", authRes.status);
@@ -56,13 +60,14 @@ export async function testBackendConnectivity() {
     console.log("\n=== Backend Connectivity Summary ===");
     console.log(`Backend URL: ${BASE_URL}`);
     console.log("Basic connectivity: " + (homeRes.ok ? "✅" : "❌"));
-    console.log("Authentication: " + (token ? (authRes?.ok ? "✅" : "❌") : "⚠️ Not tested (no token)"));
+    console.log("Authentication: " + (token ? (authResStatus ? "✅" : "❌") : "⚠️ Not tested (no token)"));
     console.log("Data endpoints: " + (heatmapRes.ok ? "✅" : "❌"));
 
     return {
       isConnected: homeRes.ok,
-      authWorking: token ? (authRes?.ok || false) : null,
-      dataEndpointsWorking: heatmapRes.ok
+      authWorking: token ? authResStatus : null,
+      dataEndpointsWorking: heatmapRes.ok,
+      userData: userData
     };
   } catch (error) {
     console.error("Backend connectivity test failed:", error);
