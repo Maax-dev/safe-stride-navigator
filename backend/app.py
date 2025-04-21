@@ -311,6 +311,25 @@ def get_crimes():
 
 @app.route("/report_audio", methods=["POST"])
 def report_audio():
+    # 1. Authenticate the user from JWT
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Authorization header missing or invalid"}), 401
+
+    token = auth_header.replace("Bearer ", "")
+    payload = decode_token(token)
+    if not payload:
+        return jsonify({"error": "Invalid or expired token"}), 401
+
+    # 2. Get the user from token
+    user = mongo.db.users.find_one({"_id": ObjectId(payload["user_id"])})
+    if not user or "emergency_contact" not in user:
+        return jsonify({"error": "Emergency contact not found"}), 404
+
+    receiver_email = user["emergency_contact"]["email"]
+    receiver_name = user["emergency_contact"]["name"]
+
+    # 3. Get report data
     data = request.get_json()
     transcript = data.get("transcript")
     lat = data.get("lat")
@@ -323,11 +342,10 @@ def report_audio():
         return jsonify({"error": "Missing transcript or location"}), 400
 
     try:
-        # Step 1: Classify immediately
+        # 4. Classify and store report
         incident_type = classify_incident(transcript)
         print("Predicted incident type:", incident_type)
 
-        # Step 2: Store report in DB immediately
         mongo.db.incident_reports.insert_one({
             "transcript": transcript,
             "incident_type": incident_type,
@@ -335,7 +353,7 @@ def report_audio():
             "timestamp": datetime.utcnow()
         })
 
-        # Step 3: Kick off background thread to update graph
+        # 5. Background update to graph
         def run_update():
             try:
                 update_graph_with_report(
@@ -347,52 +365,52 @@ def report_audio():
 
         Thread(target=run_update).start()
 
-        # Email configuration
-        smtp_server = "smtp.gmail.com"
-        smtp_port = 587
-        sender_email = "gptmax3002@gmail.com"
-        sender_password = "PuneethR0h!t@120"  # Use an App Password if using Gmail
-        receiver_email = emergency_contact
-        subject = "Emergency Report"
-        body = (
-        f"Hello,\n\n"
-        "This is an email to inform you about an emergency report submitted by someone who has you as an emergency contact. "
-        "Please check your application for more information.\n\n"
-        f'The transcript of the audio shared is: "{transcript}"\n\n'
-        f"The location is: {lat}, {lon}\n\n"
-        "Regards,\n"
-        "Safe Stride Safety Team"
-        )
-        # Create the email
-        msg = MIMEMultipart()
-        msg["From"] = sender_email
-        msg["To"] = receiver_email
-        msg["Subject"] = subject
-
-        msg.attach(MIMEText(body, "plain"))
-
-        # Send the email
+        # 6. Email notification
         try:
+            smtp_server = "smtp.gmail.com"
+            smtp_port = 587
+            sender_email = "gptmax3002@gmail.com"
+            sender_password = "mfxk kkog inhk avkp"  # Replace with app password
+            subject = "Emergency Report"
+
+            body = (
+                f"Hello {receiver_name},\n\n"
+                "This is an alert from SafeStride.\n\n"
+                "An emergency report has been submitted by your contact.\n\n"
+                f"Transcript: \"{transcript}\"\n"
+                f"Location: {lat}, {lon}\n\n"
+                "Please check your SafeStride dashboard or reach out to them directly.\n\n"
+                "Stay safe,\n"
+                "The SafeStride Team"
+            )
+
+            msg = MIMEMultipart()
+            msg["From"] = sender_email
+            msg["To"] = receiver_email
+            msg["Subject"] = subject
+            msg.attach(MIMEText(body, "plain"))
+
             server = smtplib.SMTP(smtp_server, smtp_port)
-            server.starttls()  # Secure the connection
+            server.starttls()
             server.login(sender_email, sender_password)
             server.send_message(msg)
-            print("Email sent successfully!")
-        except Exception as e:
-            print("Failed to send email:", str(e))
-        finally:
             server.quit()
+            print("Emergency email sent successfully!")
 
-        # Step 4: Return fast response
+        except Exception as e:
+            print("Failed to send emergency email:", str(e))
+
+        # 7. Return response
         return jsonify({
             "incident_type": incident_type,
             "location": {"lat": lat, "lon": lon},
-            "status": "Report received and processing in background"
+            "status": "Report received and emergency contact notified"
         })
 
     except Exception as e:
-        print("Unhandled error:", e)
+        print("Unhandled error in report_audio:", e)
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/heatmap_data", methods=["GET"])
 def heatmap_data():
