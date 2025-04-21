@@ -4,14 +4,17 @@ import { testBackendConnectivity } from "@/api/api-test";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 // This page automatically redirects to the appropriate page
 const Index = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [backendStatus, setBackendStatus] = useState<{
     checking: boolean;
     isConnected: boolean | null;
     error: any | null;
+    errorMessage?: string;
   }>({
     checking: true,
     isConnected: null,
@@ -26,7 +29,8 @@ const Index = () => {
         setBackendStatus({
           checking: false,
           isConnected: status.isConnected,
-          error: status.error || null
+          error: status.error || null,
+          errorMessage: status.error?.message || (typeof status.error === 'string' ? status.error : undefined)
         });
         
         // Only proceed with auth check if backend is connected
@@ -41,18 +45,34 @@ const Index = () => {
             // Otherwise go to login page
             navigate('/login');
           }
+        } else if (status.error) {
+          // Show a toast with the error
+          toast({
+            title: "Backend Connection Issue",
+            description: typeof status.error === 'string' 
+              ? status.error 
+              : status.error?.message || "Could not connect to the backend server",
+            variant: "destructive"
+          });
         }
       } catch (e) {
         setBackendStatus({
           checking: false,
           isConnected: false,
-          error: e
+          error: e,
+          errorMessage: e?.message || "An unexpected error occurred"
+        });
+        
+        toast({
+          title: "Connection Error",
+          description: e?.message || "An unexpected error occurred",
+          variant: "destructive"
         });
       }
     };
     
     checkBackend();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const retryConnection = () => {
     setBackendStatus({
@@ -60,12 +80,14 @@ const Index = () => {
       isConnected: null,
       error: null
     });
+    
     // Re-run the effect
     testBackendConnectivity().then(status => {
       setBackendStatus({
         checking: false,
         isConnected: status.isConnected,
-        error: status.error || null
+        error: status.error || null,
+        errorMessage: status.error?.message || (typeof status.error === 'string' ? status.error : undefined)
       });
       
       if (status.isConnected) {
@@ -75,6 +97,14 @@ const Index = () => {
         } else {
           navigate('/login');
         }
+      } else {
+        toast({
+          title: "Backend Connection Issue",
+          description: typeof status.error === 'string' 
+            ? status.error 
+            : status.error?.message || "Could not connect to the backend server",
+          variant: "destructive"
+        });
       }
     });
   };
@@ -101,8 +131,22 @@ const Index = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Backend Connection Failed</AlertTitle>
             <AlertDescription className="space-y-4">
-              <p>Could not connect to the backend server at: <code className="bg-muted p-1 rounded">{import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}</code></p>
-              <p>Please ensure your Flask backend is running on port 5000.</p>
+              <p>Could not connect to the backend server at: <code className="bg-muted p-1 rounded">{BASE_URL}</code></p>
+              
+              {backendStatus.errorMessage && (
+                <div className="mt-2 p-3 bg-destructive/10 rounded text-sm overflow-auto">
+                  <p><strong>Error Details:</strong> {backendStatus.errorMessage}</p>
+                </div>
+              )}
+              
+              <p className="mt-2">Most common causes:</p>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Flask backend is not running on port 5000</li>
+                <li>CORS is not properly configured on your Flask server</li>
+                <li>Your Flask server is returning HTML instead of JSON</li>
+                <li>Network connection issues</li>
+              </ul>
+              
               <div className="flex justify-center mt-4">
                 <Button onClick={retryConnection}>
                   Retry Connection
