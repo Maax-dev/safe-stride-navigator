@@ -1,8 +1,6 @@
+// Change the BASE_URL to local development server
+const BASE_URL = "http://127.0.0.1:5000"; // Updated to use local backend
 
-// Change the BASE_URL to a public endpoint
-const BASE_URL = "https://safestride-backend.onrender.com"; // Updated to use a publicly accessible endpoint
-
-// UPDATED: Accept contact info in registerUser
 export async function registerUser(
   email: string,
   password: string,
