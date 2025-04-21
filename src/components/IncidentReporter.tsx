@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,9 +10,24 @@ const IncidentReporter = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
   const recognitionRef = useRef<any>(null);
-
+  const [userData, setUserData] = useState<any>(null);
+  
   useEffect(() => {
     getCurrentLocation();
+    
+    // Get user data from localStorage
+    const storedUserData = localStorage.getItem('safeStrideUser');
+    if (storedUserData) {
+      try {
+        const parsedData = JSON.parse(storedUserData);
+        setUserData(parsedData);
+        console.log("Loaded user data:", parsedData);
+      } catch (err) {
+        console.error("Error parsing user data:", err);
+      }
+    } else {
+      console.log("No user data found in localStorage");
+    }
   }, []);
 
   const getCurrentLocation = () => {
@@ -94,6 +110,10 @@ const IncidentReporter = () => {
 
     setIsSubmitting(true);
 
+    // Extract emergency contact email from user data
+    const emergencyContactEmail = userData?.emergency_contact?.email || "";
+    console.log("Emergency contact email:", emergencyContactEmail);
+
     try {
       const res = await fetch("http://127.0.0.1:5000/report_audio", {
         method: "POST",
@@ -104,6 +124,7 @@ const IncidentReporter = () => {
           transcript,
           lat: location.lat,
           lon: location.lng,
+          emergency_contact: emergencyContactEmail // Pass the emergency contact email to the backend
         }),
       });
 
@@ -147,6 +168,16 @@ const IncidentReporter = () => {
               <span className="text-sm text-destructive">Detecting location...</span>
             )}
           </div>
+
+          {userData && userData.emergency_contact?.email ? (
+            <div className="text-center text-xs text-muted-foreground">
+              Emergency contact: {userData.emergency_contact.email}
+            </div>
+          ) : (
+            <div className="text-center text-xs text-destructive">
+              No emergency contact found. Please update your profile.
+            </div>
+          )}
 
           <div className="flex flex-col items-center gap-4">
             {!isRecording ? (

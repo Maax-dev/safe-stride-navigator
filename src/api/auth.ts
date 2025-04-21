@@ -1,4 +1,3 @@
-
 // Change the BASE_URL to local development server
 export const BASE_URL = "http://127.0.0.1:5000"; // Updated to use local backend and now exported
 
@@ -174,5 +173,38 @@ export async function updateUserProfile(
     }
     
     throw error;
+  }
+}
+
+// Add a new function to get the emergency contact email
+export async function getEmergencyContactEmail(): Promise<string | null> {
+  try {
+    // Try to get from localStorage first (fastest)
+    const userData = JSON.parse(localStorage.getItem('safeStrideUser') || '{}');
+    if (userData?.emergency_contact?.email) {
+      return userData.emergency_contact.email;
+    }
+    
+    // If not in localStorage, try to fetch from API
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    
+    const res = await fetch(`${BASE_URL}/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    if (res.ok) {
+      const user = await res.json();
+      if (user?.emergency_contact?.email) {
+        return user.emergency_contact.email;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error getting emergency contact:", error);
+    return null;
   }
 }
