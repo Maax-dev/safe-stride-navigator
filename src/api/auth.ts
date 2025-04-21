@@ -1,8 +1,8 @@
 
-// Change the BASE_URL to the deployed backend URL
+// Set the BASE_URL based on the environment
 export const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
   ? "http://127.0.0.1:5000" 
-  : "https://safestride-backend.herokuapp.com"; // This is just a placeholder, replace with your actual deployed backend URL
+  : window.location.origin.replace('3000', '5000').replace('8080', '5000'); // Dynamically determine backend URL in production
 
 export async function registerUser(
   email: string,
@@ -103,7 +103,8 @@ export async function updateUserProfile(
   if (!token) throw new Error("No authentication token found");
 
   try {
-    // Add a log to debug the URL and request
+    // Add logs to debug the connection
+    console.log(`Using backend URL: ${BASE_URL}`);
     console.log(`Sending profile update to: ${BASE_URL}/update_profile`);
     
     const res = await fetch(`${BASE_URL}/update_profile`, {
