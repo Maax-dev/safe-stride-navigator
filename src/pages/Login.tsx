@@ -51,48 +51,75 @@ const Login = () => {
 
     try {
       if (isSignUp) {
-        await registerUser(email, password, name, contactName, contactEmail);
+        try {
+          await registerUser(email, password, name, contactName, contactEmail);
+          localStorage.setItem('safeStrideUser', JSON.stringify({
+            email,
+            name: name || email.split('@')[0],
+            emergency_contact: { name: contactName, email: contactEmail }
+          }));
+          if (locationPermission === null) {
+            handleRequestLocation();
+          } else {
+            navigate('/home');
+          }
+        } catch (err: any) {
+          // Specifically handle signup errors
+          console.error('Signup error:', err);
+          
+          if (err.message && err.message.includes('User already exists')) {
+            toast({
+              title: "Account already exists",
+              description: "This email is already registered. Please try logging in instead.",
+              variant: "destructive",
+            });
+            setError('This email address is already registered. Please log in instead.');
+            // Automatically switch to login mode after a short delay
+            setTimeout(() => {
+              setIsSignUp(false);
+            }, 2000);
+          } else {
+            toast({
+              title: "Signup failed",
+              description: err.message || "Could not create your account. Please try again.",
+              variant: "destructive",
+            });
+            setError(err.message || "Signup failed. Please try again.");
+          }
+        }
       } else {
-        await loginUser(email, password);
-      }
-      localStorage.setItem('safeStrideUser', JSON.stringify({
-        email,
-        name: name || email.split('@')[0],
-        emergency_contact: { name: contactName, email: contactEmail }
-      }));
-      if (locationPermission === null) {
-        handleRequestLocation();
-      } else {
-        navigate('/home');
+        try {
+          await loginUser(email, password);
+          localStorage.setItem('safeStrideUser', JSON.stringify({
+            email,
+            name: name || email.split('@')[0],
+            emergency_contact: { name: contactName, email: contactEmail }
+          }));
+          if (locationPermission === null) {
+            handleRequestLocation();
+          } else {
+            navigate('/home');
+          }
+        } catch (err: any) {
+          // Specifically handle login errors
+          console.error('Login error:', err);
+          toast({
+            title: "Login failed",
+            description: "Invalid email or password. Please check your credentials.",
+            variant: "destructive",
+          });
+          setError('Invalid email or password. Please check your credentials.');
+        }
       }
     } catch (err: any) {
+      // General error handling
       console.error('Authentication error:', err);
-      
-      // Check for specific error messages
-      const errorMessage = err.message || 'Authentication failed';
-      
-      if (errorMessage.includes('User already exists') || errorMessage.includes('409')) {
-        toast({
-          title: "Account already exists",
-          description: "This email is already registered. Please try logging in instead.",
-          variant: "destructive",
-        });
-        setError('This email address is already registered. Please log in or use a different email.');
-      } else if (errorMessage.includes('Login failed')) {
-        toast({
-          title: "Login failed",
-          description: "Invalid email or password. Please check your credentials and try again.",
-          variant: "destructive",
-        });
-        setError('Invalid email or password. Please check your credentials and try again.');
-      } else {
-        toast({
-          title: "Authentication error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        setError(errorMessage);
-      }
+      toast({
+        title: "Authentication error",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+      setError(err.message || 'Authentication failed. Please try again later.');
     } finally {
       setIsLoading(false);
     }

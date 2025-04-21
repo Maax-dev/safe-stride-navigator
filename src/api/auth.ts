@@ -24,8 +24,18 @@ export async function registerUser(
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Signup failed");
+  
+  // Improved error handling based on status code
+  if (!res.ok) {
+    if (res.status === 409) {
+      throw new Error("User already exists");
+    } else {
+      throw new Error(data.error || data.detail || "Signup failed");
+    }
+  }
+  
   localStorage.setItem("token", data.token);
+  return data;
 }
 
 export async function loginUser(email: string, password: string) {
@@ -36,8 +46,14 @@ export async function loginUser(email: string, password: string) {
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Login failed");
+  
+  // Improved error handling
+  if (!res.ok) {
+    throw new Error(data.error || data.detail || "Login failed");
+  }
+  
   localStorage.setItem("token", data.token);
+  return data;
 }
 
 export async function onAuthChanged(callback: (user: any) => void) {
