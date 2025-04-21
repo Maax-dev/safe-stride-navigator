@@ -1,10 +1,26 @@
+
 const BASE_URL = "http://127.0.0.1:5000"; // ⬅️ Change this once if needed later
 
-export async function registerUser(email: string, password: string, name: string) {
+// UPDATED: Accept contact info in registerUser
+export async function registerUser(
+  email: string,
+  password: string,
+  name: string,
+  contactName: string,
+  contactEmail: string
+) {
   const res = await fetch(`${BASE_URL}/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({
+      email,
+      password,
+      name,
+      emergency_contact: {
+        name: contactName,
+        email: contactEmail
+      }
+    })
   });
 
   const data = await res.json();

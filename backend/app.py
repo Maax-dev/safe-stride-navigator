@@ -2,10 +2,6 @@ from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from urllib.parse import quote_plus
 from flask_cors import CORS
-from flask import Flask, request, jsonify
-import json
-from datetime import datetime, timedelta
-import os
 from shapely.geometry import Point
 import geopandas as gpd
 import numpy as np
@@ -157,18 +153,56 @@ def signup():
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
+    name = data.get("name") # accept 'name'
+    emergency_contact = data.get("emergency_contact")
+
+    if not emergency_contact or not emergency_contact.get("name") or not emergency_contact.get("email"):
+        return jsonify({"error": "Emergency contact info required"}), 400
 
     if mongo.db.users.find_one({"email": email}):
         return jsonify({"error": "User already exists"}), 409
 
     hashed_pw = hash_password(password)
-    result = mongo.db.users.insert_one({
+    user_doc = {
         "email": email,
         "password_hash": hashed_pw,
-        "created_at": datetime.utcnow()
-    })
-
+        "created_at": datetime.utcnow(),
+        "name": name if name else "",
+        "emergency_contact": emergency_contact
+    }
+    result = mongo.db.users.insert_one(user_doc)
     token = generate_token(result.inserted_id)
+
+    # --- Send welcome/notification email to emergency contact ---
+    try:
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = "gptmax3002@gmail.com"
+        sender_password = "PuneethR0h!t@120"  # Use an App Password in production!
+        receiver_email = emergency_contact["email"]
+        subject = "You are an emergency contact for a new Safe Stride user"
+        body = (
+            f"Hello {emergency_contact['name']},\n\n"
+            f"You have been listed as an emergency contact for a new Safe Stride user ({name or email}).\n"
+            "You will be notified if your contact submits an emergency report from our app.\n\n"
+            "Regards,\n"
+            "Safe Stride Safety Team"
+        )
+        msg = MIMEMultipart()
+        msg["From"] = sender_email
+        msg["To"] = receiver_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "plain"))
+
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
+        server.quit()
+        print("Signup emergency contact email sent successfully!")
+    except Exception as e:
+        print("Failed to send signup emergency email:", str(e))
+
     return jsonify({"token": token})
 
 @app.route("/login", methods=["POST"])
@@ -359,6 +393,7 @@ def report_audio():
     except Exception as e:
         print("Unhandled error:", e)
         return jsonify({"error": str(e)}), 500
+
 @app.route("/heatmap_data", methods=["GET"])
 def heatmap_data():
     points = []

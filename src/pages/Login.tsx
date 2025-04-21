@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -8,32 +7,30 @@ import { Label } from "@/components/ui/label";
 import { Navigation } from "lucide-react";
 import { registerUser, loginUser, onAuthChanged } from '@/api/auth';
 
-
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
-  // Check if user is already logged in
+
   useEffect(() => {
     const user = localStorage.getItem('safeStrideUser');
     if (user) {
       navigate('/home');
     }
   }, [navigate]);
-  
-  
+
   const handleRequestLocation = () => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         console.log("Location access granted:", position.coords);
         setLocationPermission(true);
-        // If we got here after logging in, now navigate to home
         if (localStorage.getItem('safeStrideUser')) {
           navigate('/home');
         }
@@ -44,33 +41,26 @@ const Login = () => {
       }
     );
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      // Use Firebase Authentication
       if (isSignUp) {
-        // Register new user
-        await registerUser(email, password, name);
+        await registerUser(email, password, name, contactName, contactEmail);
       } else {
-        // Login existing user
         await loginUser(email, password);
       }
-      
-      // Save some user info for easy access
-      localStorage.setItem('safeStrideUser', JSON.stringify({ 
-        email, 
-        name: name || email.split('@')[0]
+      localStorage.setItem('safeStrideUser', JSON.stringify({
+        email,
+        name: name || email.split('@')[0],
+        emergency_contact: { name: contactName, email: contactEmail }
       }));
-      
-      // Check if location permission is granted, if not, request it
       if (locationPermission === null) {
         handleRequestLocation();
       } else {
-        // Redirect to home page
         navigate('/home');
       }
     } catch (err) {
@@ -80,7 +70,7 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-muted p-4">
       <Card className="w-full max-w-md p-6 shadow-lg">
@@ -95,15 +85,38 @@ const Login = () => {
           
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="Your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactName">Emergency Contact Name</Label>
+                  <Input
+                    id="contactName"
+                    placeholder="Contact person's name"
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactEmail">Emergency Contact Email</Label>
+                  <Input
+                    id="contactEmail"
+                    type="email"
+                    placeholder="contact.email@example.com"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </>
             )}
             
             <div className="space-y-2">
