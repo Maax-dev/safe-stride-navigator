@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MapView from '@/components/MapView';
 import IncidentReporter from '@/components/IncidentReporter';
-import { Navigation, Flag } from "lucide-react";
+import { Navigation, Flag, UserRound } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
@@ -38,7 +38,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
       <header className="border-b py-4 px-4">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -47,6 +46,10 @@ const Home = () => {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">Welcome, {userName}</span>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
+              <UserRound className="h-4 w-4 mr-2" />
+              Profile
+            </Button>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Logout
             </Button>

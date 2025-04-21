@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -11,8 +10,8 @@ import NotFound from "./pages/NotFound";
 import SetupPage from "./pages/Setup";
 import Index from "./pages/Index";
 import Heatmap from "./pages/Heatmap";
+import Profile from "./pages/Profile";
 
-// Create a client
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -29,6 +28,7 @@ const App = () => {
               <Route path="/home" element={<Home />} />
               <Route path="/setup" element={<SetupPage />} />
               <Route path="/heatmap" element={<Heatmap />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
