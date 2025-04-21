@@ -113,22 +113,18 @@ const IncidentReporter = () => {
     // Extract emergency contact email from user data
     const emergencyContactEmail = userData?.emergency_contact?.email || "";
     console.log("Emergency contact email:", emergencyContactEmail);
-    
-    // Get authentication token from localStorage
-    const token = localStorage.getItem('safeStrideToken');
-    
+
     try {
       const res = await fetch("http://127.0.0.1:5000/report_audio", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": token ? `Bearer ${token}` : '', // Include token if available
         },
         body: JSON.stringify({
           transcript,
           lat: location.lat,
           lon: location.lng,
-          emergency_contact: emergencyContactEmail
+          emergency_contact: emergencyContactEmail // Pass the emergency contact email to the backend
         }),
       });
 
@@ -140,19 +136,11 @@ const IncidentReporter = () => {
           description: "Thank you for reporting. Your report was logged successfully."
         });
       } else {
-        if (res.status === 401) {
-          toast({
-            title: "Authentication Error",
-            description: "Your session has expired. Please log in again.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Submission Error",
-            description: data.error || "An error occurred. Please try again.",
-            variant: "destructive"
-          });
-        }
+        toast({
+          title: "Submission Error",
+          description: data.error || "An error occurred. Please try again.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error("Submit Error:", error);

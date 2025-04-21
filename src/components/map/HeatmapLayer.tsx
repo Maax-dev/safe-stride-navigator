@@ -1,16 +1,14 @@
-
 import React, { useRef, useEffect } from 'react';
 import L from 'leaflet';
 
 interface HeatmapLayerProps {
   centerCoords: [number, number];
   map: L.Map;
-  isVisible: boolean; // Add visibility prop
 }
 
 const BASE_URL = "http://127.0.0.1:5000"; 
 
-const HeatmapLayer = ({ centerCoords, map, isVisible }: HeatmapLayerProps) => {
+const HeatmapLayer = ({ centerCoords, map }: HeatmapLayerProps) => {
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
@@ -28,58 +26,55 @@ const HeatmapLayer = ({ centerCoords, map, isVisible }: HeatmapLayerProps) => {
         }
       }
 
-      // Only create and add layer if it should be visible
-      if (isVisible) {
-        // Create a new layer group
-        const heatmapOverlay = L.layerGroup();
-        heatmapLayerRef.current = heatmapOverlay;
+      // Create a new layer group
+      const heatmapOverlay = L.layerGroup();
+      heatmapLayerRef.current = heatmapOverlay;
 
-        // Short delay to ensure map is ready
-        setTimeout(() => {
-          if (map && map._loaded && isVisible) {
-            try {
-              // Fetch heatmap data from your backend API
-              fetch(`${BASE_URL}/heatmap_data`)
-                .then(res => res.json())
-                .then(points => {
-                  points.forEach((point: any) => {
-                    const intensity = point.properties.intensity;
+      // Short delay to ensure map is ready
+      setTimeout(() => {
+        if (map && map._loaded) {
+          try {
+            // Fetch heatmap data from your backend API
+            fetch(`${BASE_URL}/heatmap_data`)
+              .then(res => res.json())
+              .then(points => {
+                points.forEach((point: any) => {
+                  const intensity = point.properties.intensity;
 
-                    const getColor = (value: number): string => {
-                      if (value > 0.7) return '#d73027';
-                      if (value > 0.4) return '#fc8d59';
-                      if (value > 0.2) return '#fee090';
-                      return '#e0f3f8';
-                    };
+                  const getColor = (value: number): string => {
+                    if (value > 0.7) return '#d73027';
+                    if (value > 0.4) return '#fc8d59';
+                    if (value > 0.2) return '#fee090';
+                    return '#e0f3f8';
+                  };
 
-                    const marker = L.circleMarker(
-                      [point.geometry.coordinates[1], point.geometry.coordinates[0]], 
-                      {
-                        radius: 8 + (intensity * 12),
-                        fillColor: getColor(intensity),
-                        color: 'rgba(0,0,0,0.1)',
-                        weight: 1,
-                        opacity: 0.8,
-                        fillOpacity: 0.6
-                      }
-                    );
+                  const marker = L.circleMarker(
+                    [point.geometry.coordinates[1], point.geometry.coordinates[0]], 
+                    {
+                      radius: 8 + (intensity * 12),
+                      fillColor: getColor(intensity),
+                      color: 'rgba(0,0,0,0.1)',
+                      weight: 1,
+                      opacity: 0.8,
+                      fillOpacity: 0.6
+                    }
+                  );
 
-                    marker.bindPopup(`Reported ${point.properties.type}`);
-                    heatmapOverlay.addLayer(marker);
-                  });
-
-                  // Only add the layer if map is mounted and valid
-                  heatmapOverlay.addTo(map);
-                })
-                .catch(error => {
-                  console.error("Error fetching heatmap data:", error);
+                  marker.bindPopup(`Reported ${point.properties.type}`);
+                  heatmapOverlay.addLayer(marker);
                 });
-            } catch (err) {
-              console.error("Error processing heatmap data:", err);
-            }
+
+                // Only add the layer if map is mounted and valid
+                heatmapOverlay.addTo(map);
+              })
+              .catch(error => {
+                console.error("Error fetching heatmap data:", error);
+              });
+          } catch (err) {
+            console.error("Error processing heatmap data:", err);
           }
-        }, 500);
-      }
+        }
+      }, 500);
     } catch (error) {
       console.error("Error in HeatmapLayer:", error);
     }
@@ -97,7 +92,7 @@ const HeatmapLayer = ({ centerCoords, map, isVisible }: HeatmapLayerProps) => {
         console.error("Error during HeatmapLayer cleanup:", err);
       }
     };
-  }, [centerCoords, map, isVisible]); // Add isVisible to dependencies
+  }, [centerCoords, map]);
 
   return null;
 };

@@ -34,7 +34,7 @@ export async function registerUser(
       }
     }
     
-    // Return token and data
+    localStorage.setItem("token", data.token);
     return data;
   } catch (error) {
     console.error("Registration error:", error);
@@ -57,6 +57,7 @@ export async function loginUser(email: string, password: string) {
       throw new Error(data.error || data.detail || "Login failed");
     }
     
+    localStorage.setItem("token", data.token);
     return data;
   } catch (error) {
     console.error("Login error:", error);
@@ -65,7 +66,7 @@ export async function loginUser(email: string, password: string) {
 }
 
 export async function onAuthChanged(callback: (user: any) => void) {
-  const token = localStorage.getItem("safeStrideToken");
+  const token = localStorage.getItem("token");
   if (!token) return callback(null);
 
   try {
@@ -185,7 +186,7 @@ export async function getEmergencyContactEmail(): Promise<string | null> {
     }
     
     // If not in localStorage, try to fetch from API
-    const token = localStorage.getItem("safeStrideToken");
+    const token = localStorage.getItem("token");
     if (!token) return null;
     
     const res = await fetch(`${BASE_URL}/me`, {
@@ -205,24 +206,5 @@ export async function getEmergencyContactEmail(): Promise<string | null> {
   } catch (error) {
     console.error("Error getting emergency contact:", error);
     return null;
-  }
-}
-
-// Function to check if the current token is valid
-export async function isTokenValid(): Promise<boolean> {
-  const token = localStorage.getItem("safeStrideToken");
-  if (!token) return false;
-  
-  try {
-    const res = await fetch(`${BASE_URL}/validate-token`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    
-    return res.ok;
-  } catch (error) {
-    console.error("Token validation error:", error);
-    return false;
   }
 }
