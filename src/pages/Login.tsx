@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Navigation } from "lucide-react";
 import { registerUser, loginUser, onAuthChanged } from '@/api/auth';
 import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [networkError, setNetworkError] = useState<boolean>(false);
 
   useEffect(() => {
     const user = localStorage.getItem('safeStrideUser');
@@ -48,6 +51,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setNetworkError(false);
 
     try {
       if (isSignUp) {
@@ -64,7 +68,6 @@ const Login = () => {
             navigate('/home');
           }
         } catch (err: any) {
-          // Specifically handle signup errors
           console.error('Signup error:', err);
           
           if (err.message && err.message.includes('User already exists')) {
@@ -74,10 +77,17 @@ const Login = () => {
               variant: "destructive",
             });
             setError('This email address is already registered. Please log in instead.');
-            // Automatically switch to login mode after a short delay
             setTimeout(() => {
               setIsSignUp(false);
             }, 2000);
+          } else if (err.message === "Failed to fetch") {
+            setNetworkError(true);
+            setError("Network error: Cannot connect to the server. Please check your internet connection.");
+            toast({
+              title: "Network Error",
+              description: "Cannot connect to the server. Please check your internet connection.",
+              variant: "destructive",
+            });
           } else {
             toast({
               title: "Signup failed",
@@ -92,7 +102,7 @@ const Login = () => {
           await loginUser(email, password);
           localStorage.setItem('safeStrideUser', JSON.stringify({
             email,
-            name: name || email.split('@')[0],
+            name: email.split('@')[0],
             emergency_contact: { name: contactName, email: contactEmail }
           }));
           if (locationPermission === null) {
@@ -101,18 +111,27 @@ const Login = () => {
             navigate('/home');
           }
         } catch (err: any) {
-          // Specifically handle login errors
           console.error('Login error:', err);
-          toast({
-            title: "Login failed",
-            description: "Invalid email or password. Please check your credentials.",
-            variant: "destructive",
-          });
-          setError('Invalid email or password. Please check your credentials.');
+          
+          if (err.message === "Failed to fetch") {
+            setNetworkError(true);
+            setError("Network error: Cannot connect to the server. Please check your internet connection.");
+            toast({
+              title: "Network Error",
+              description: "Cannot connect to the server. Please check your internet connection.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Login failed",
+              description: "Invalid email or password. Please check your credentials.",
+              variant: "destructive",
+            });
+            setError('Invalid email or password. Please check your credentials.');
+          }
         }
       }
     } catch (err: any) {
-      // General error handling
       console.error('Authentication error:', err);
       toast({
         title: "Authentication error",
@@ -137,10 +156,20 @@ const Login = () => {
             <p className="text-muted-foreground mt-2">Navigate safely with real-time safety data</p>
           </div>
           
-          {error && (
+          {error && !networkError && (
             <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
               {error}
             </div>
+          )}
+          
+          {networkError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Network Error</AlertTitle>
+              <AlertDescription>
+                Cannot connect to the server. Please check your internet connection or try again later.
+              </AlertDescription>
+            </Alert>
           )}
           
           <form onSubmit={handleSubmit} className="space-y-4">
