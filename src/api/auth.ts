@@ -1,3 +1,4 @@
+
 // Change the BASE_URL to local development server
 export const BASE_URL = "http://127.0.0.1:5000"; // Updated to use local backend and now exported
 
@@ -99,6 +100,9 @@ export async function updateUserProfile(
   const token = localStorage.getItem("token");
   if (!token) throw new Error("No authentication token found");
 
+  console.log("Updating profile with:", { email, contactName, contactEmail });
+  console.log("Using URL:", `${BASE_URL}/update_profile`);
+  
   try {
     const res = await fetch(`${BASE_URL}/update_profile`, {
       method: "PUT",
@@ -115,24 +119,40 @@ export async function updateUserProfile(
       })
     });
 
-    const data = await res.json();
+    console.log("Profile update response status:", res.status);
     
-    if (!res.ok) {
-      throw new Error(data.error || data.detail || "Failed to update profile");
-    }
-    
-    // Update local storage with new details
-    const userData = JSON.parse(localStorage.getItem('safeStrideUser') || '{}');
-    localStorage.setItem('safeStrideUser', JSON.stringify({
-      ...userData,
-      email,
-      emergency_contact: {
-        name: contactName,
-        email: contactEmail
+    // Check if the response is JSON
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || data.detail || "Failed to update profile");
       }
-    }));
+      
+      // Update local storage with new details
+      const userData = JSON.parse(localStorage.getItem('safeStrideUser') || '{}');
+      localStorage.setItem('safeStrideUser', JSON.stringify({
+        ...userData,
+        email,
+        emergency_contact: {
+          name: contactName,
+          email: contactEmail
+        }
+      }));
 
-    return data;
+      return data;
+    } else {
+      // Handle non-JSON responses
+      const textResponse = await res.text();
+      console.log("Non-JSON response:", textResponse);
+      
+      if (!res.ok) {
+        throw new Error(`Failed to update profile: ${res.status} ${res.statusText}`);
+      }
+      
+      return { message: "Profile updated successfully" };
+    }
   } catch (error) {
     console.error("Profile update error:", error);
     throw error;

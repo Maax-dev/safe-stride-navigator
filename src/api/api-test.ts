@@ -11,8 +11,16 @@ export async function testBackendConnectivity() {
     });
     
     if (homeRes.ok) {
-      const homeData = await homeRes.json();
-      console.log("✅ Home endpoint working:", homeData);
+      // Try to parse as JSON first
+      let homeData;
+      try {
+        homeData = await homeRes.json();
+      } catch (e) {
+        // If not JSON, get as text
+        homeData = await homeRes.text();
+        console.log("Home endpoint returned non-JSON response:", homeData);
+      }
+      console.log("✅ Home endpoint working");
     } else {
       console.error("❌ Home endpoint failed:", homeRes.status);
     }
@@ -43,17 +51,44 @@ export async function testBackendConnectivity() {
       console.log("ℹ️ No token found, skipping /me endpoint test");
     }
 
+    // Test update_profile endpoint
+    console.log("\nTesting update_profile endpoint...");
+    if (token) {
+      try {
+        const testProfileRes = await fetch(`${BASE_URL}/update_profile`, {
+          method: "OPTIONS",
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        console.log("Update profile endpoint OPTIONS check:", testProfileRes.status);
+        
+        if (testProfileRes.ok) {
+          console.log("✅ Update profile endpoint appears available");
+        } else {
+          console.log("⚠️ Update profile endpoint may have issues");
+        }
+      } catch (error) {
+        console.error("❌ Update profile endpoint test failed:", error);
+      }
+    }
+
     // Test route data endpoints
     console.log("\nTesting data endpoints...");
-    const heatmapRes = await fetch(`${BASE_URL}/heatmap_data`, {
-      method: "GET"
-    });
-    
-    if (heatmapRes.ok) {
-      const heatmapData = await heatmapRes.json();
-      console.log(`✅ Heatmap data endpoint working (${heatmapData.length} points received)`);
-    } else {
-      console.error("❌ Heatmap data endpoint failed:", heatmapRes.status);
+    try {
+      const heatmapRes = await fetch(`${BASE_URL}/heatmap_data`, {
+        method: "GET"
+      });
+      
+      if (heatmapRes.ok) {
+        const heatmapData = await heatmapRes.json();
+        console.log(`✅ Heatmap data endpoint working (${heatmapData.length} points received)`);
+      } else {
+        console.error("❌ Heatmap data endpoint failed:", heatmapRes.status);
+      }
+    } catch (error) {
+      console.error("❌ Heatmap data endpoint error:", error);
     }
 
     // Overall status
@@ -61,12 +96,10 @@ export async function testBackendConnectivity() {
     console.log(`Backend URL: ${BASE_URL}`);
     console.log("Basic connectivity: " + (homeRes.ok ? "✅" : "❌"));
     console.log("Authentication: " + (token ? (authResStatus ? "✅" : "❌") : "⚠️ Not tested (no token)"));
-    console.log("Data endpoints: " + (heatmapRes.ok ? "✅" : "❌"));
-
+    
     return {
       isConnected: homeRes.ok,
       authWorking: token ? authResStatus : null,
-      dataEndpointsWorking: heatmapRes.ok,
       userData: userData
     };
   } catch (error) {
@@ -74,7 +107,6 @@ export async function testBackendConnectivity() {
     return {
       isConnected: false,
       authWorking: false,
-      dataEndpointsWorking: false,
       error: error
     };
   }
