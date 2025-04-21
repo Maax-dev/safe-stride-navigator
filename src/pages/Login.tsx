@@ -26,7 +26,8 @@ const Login = () => {
 
   useEffect(() => {
     const user = localStorage.getItem('safeStrideUser');
-    if (user) {
+    const token = localStorage.getItem('safeStrideToken');
+    if (user && token) {
       navigate('/home');
     }
   }, [navigate]);
@@ -36,7 +37,7 @@ const Login = () => {
       (position) => {
         console.log("Location access granted:", position.coords);
         setLocationPermission(true);
-        if (localStorage.getItem('safeStrideUser')) {
+        if (localStorage.getItem('safeStrideUser') && localStorage.getItem('safeStrideToken')) {
           navigate('/home');
         }
       },
@@ -56,7 +57,8 @@ const Login = () => {
     try {
       if (isSignUp) {
         try {
-          await registerUser(email, password, name, contactName, contactEmail);
+          const data = await registerUser(email, password, name, contactName, contactEmail);
+          localStorage.setItem('safeStrideToken', data.token);
           localStorage.setItem('safeStrideUser', JSON.stringify({
             email,
             name: name || email.split('@')[0],
@@ -99,7 +101,8 @@ const Login = () => {
         }
       } else {
         try {
-          await loginUser(email, password);
+          const data = await loginUser(email, password);
+          localStorage.setItem('safeStrideToken', data.token);
           localStorage.setItem('safeStrideUser', JSON.stringify({
             email,
             name: email.split('@')[0],

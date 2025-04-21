@@ -7,16 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateUserProfile } from '@/api/auth';
 import { toast } from "@/hooks/use-toast";
-import { UserRound, Home, Navigation } from "lucide-react";
+import { UserRound, Home, Flag, Navigation } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -29,11 +21,11 @@ const Profile = () => {
 
   useEffect(() => {
     const userData = localStorage.getItem('safeStrideUser');
-    if (!userData) {
-      if (!localStorage.getItem('token')) {
-        navigate('/login');
-        return;
-      }
+    const token = localStorage.getItem('safeStrideToken');
+    
+    if (!userData || !token) {
+      navigate('/');
+      return;
     }
 
     try {
@@ -96,28 +88,39 @@ const Profile = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('safeStrideUser');
+    localStorage.removeItem('safeStrideToken');
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen flex flex-col p-4">
-      <div className="w-full max-w-md mx-auto mb-6">
-        <NavigationMenu>
-          <NavigationMenuList>
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>Navigation</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <div className="grid gap-3 p-4 w-[200px]">
-                  <Link to="/home" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md">
-                    <Home className="h-4 w-4" />
-                    <span>Home</span>
-                  </Link>
-                  <Link to="/heatmap" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md">
-                    <Navigation className="h-4 w-4" />
-                    <span>Heatmap</span>
-                  </Link>
-                </div>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
+      <div className="w-full max-w-md mx-auto mb-6 flex justify-between items-center">
+        <div className="flex gap-4">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/home')}
+            className="flex items-center gap-2"
+          >
+            <Home className="h-4 w-4" />
+            <span>Home</span>
+          </Button>
+          <Button 
+            variant="ghost" 
+            onClick={() => {
+              localStorage.setItem('safeStride_activeTab', 'report');
+              navigate('/home');
+            }}
+            className="flex items-center gap-2"
+          >
+            <Flag className="h-4 w-4" />
+            <span>Report</span>
+          </Button>
+        </div>
+        <Button variant="destructive" onClick={handleLogout}>
+          Logout
+        </Button>
       </div>
 
       {error && (

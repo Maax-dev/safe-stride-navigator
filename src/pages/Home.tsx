@@ -12,11 +12,21 @@ const Home = () => {
     const user = localStorage.getItem('safeStrideUser');
     return user ? JSON.parse(user).name : 'User';
   });
-  const [activeTab, setActiveTab] = useState("map");
+  // Store active tab in localStorage to remember state
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('safeStride_activeTab') || "map";
+  });
 
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Verify user is logged in
+    const token = localStorage.getItem('safeStrideToken');
+    if (!token) {
+      navigate('/');
+      return;
+    }
+    
     // Set a flag in localStorage to prevent repeated location prompts
     if (!localStorage.getItem('safeStride_locationPrompted')) {
       localStorage.setItem('safeStride_locationPrompted', 'true');
@@ -28,7 +38,12 @@ const Home = () => {
     }, 500);
     
     return () => clearTimeout(resizeTimer);
-  }, []);
+  }, [navigate]);
+
+  // Save active tab to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('safeStride_activeTab', activeTab);
+  }, [activeTab]);
 
   const handleLogout = () => {
     localStorage.removeItem('safeStrideUser');
