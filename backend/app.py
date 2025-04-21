@@ -241,8 +241,6 @@ def me():
 def home():
     return jsonify({"message": "Sai Pranav"})
 
-
-
 @app.route("/safe_path", methods=["GET"])
 def get_route(): 
     start_lat = float(request.args.get("start_lat"))
@@ -452,6 +450,7 @@ def heatmap_data():
 
 @app.route("/update_profile", methods=["PUT"])
 def update_profile():
+    print("Update profile endpoint called")
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         return jsonify({"error": "Authorization header missing or invalid"}), 401
@@ -469,13 +468,14 @@ def update_profile():
         if not email or not emergency_contact:
             return jsonify({"error": "Missing required fields"}), 400
 
-        user = mongo.db.users.find_one({"_id": ObjectId(payload["user_id"])})
+        user_id = ObjectId(payload["user_id"])
+        user = mongo.db.users.find_one({"_id": user_id})
         if not user:
             return jsonify({"error": "User not found"}), 404
 
         # Update user document
         mongo.db.users.update_one(
-            {"_id": ObjectId(payload["user_id"])},
+            {"_id": user_id},
             {
                 "$set": {
                     "email": email,
@@ -484,9 +484,17 @@ def update_profile():
             }
         )
 
-        return jsonify({"message": "Profile updated successfully"})
+        # Return success response with updated user data
+        return jsonify({
+            "success": True,
+            "message": "Profile updated successfully",
+            "user": {
+                "email": email,
+                "emergency_contact": emergency_contact
+            }
+        })
     except Exception as e:
-        print("Profile update error:", e)
+        print("Profile update error:", str(e))
         return jsonify({"error": "Failed to update profile"}), 500
 
 if __name__ == "__main__":
