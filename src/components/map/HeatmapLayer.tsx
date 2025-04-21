@@ -5,7 +5,7 @@ import L from 'leaflet';
 interface HeatmapLayerProps {
   centerCoords: [number, number];
   map: L.Map;
-  isVisible: boolean; // Visibility prop
+  isVisible: boolean; // Add visibility prop
 }
 
 const BASE_URL = "http://127.0.0.1:5000"; 
@@ -13,7 +13,6 @@ const BASE_URL = "http://127.0.0.1:5000";
 const HeatmapLayer = ({ centerCoords, map, isVisible }: HeatmapLayerProps) => {
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
 
-  // Effect to handle visibility changes
   useEffect(() => {
     // Safety check to ensure map exists and is valid
     if (!map || !map._loaded) {
@@ -22,29 +21,15 @@ const HeatmapLayer = ({ centerCoords, map, isVisible }: HeatmapLayerProps) => {
     }
 
     try {
-      // If the layer exists and we're toggling visibility
+      // Clean up previous layer if it exists
       if (heatmapLayerRef.current) {
-        // Remove existing layer when toggle is off
-        if (map.hasLayer(heatmapLayerRef.current) && !isVisible) {
-          console.log("Removing heatmap layer due to toggle off");
+        if (map.hasLayer(heatmapLayerRef.current)) {
           map.removeLayer(heatmapLayerRef.current);
-          return;
-        }
-        // Add back the layer if toggle is on and layer exists but isn't on map
-        else if (!map.hasLayer(heatmapLayerRef.current) && isVisible) {
-          console.log("Re-adding existing heatmap layer due to toggle on");
-          heatmapLayerRef.current.addTo(map);
-          return;
-        }
-        // If the correct visibility state is already applied, do nothing
-        else if ((map.hasLayer(heatmapLayerRef.current) && isVisible) || 
-                (!map.hasLayer(heatmapLayerRef.current) && !isVisible)) {
-          return;
         }
       }
 
-      // Only create and add layer if it should be visible and doesn't exist yet
-      if (isVisible && !heatmapLayerRef.current) {
+      // Only create and add layer if it should be visible
+      if (isVisible) {
         // Create a new layer group
         const heatmapOverlay = L.layerGroup();
         heatmapLayerRef.current = heatmapOverlay;
@@ -57,8 +42,6 @@ const HeatmapLayer = ({ centerCoords, map, isVisible }: HeatmapLayerProps) => {
               fetch(`${BASE_URL}/heatmap_data`)
                 .then(res => res.json())
                 .then(points => {
-                  if (!isVisible) return; // Exit if visibility changed during fetch
-                  
                   points.forEach((point: any) => {
                     const intensity = point.properties.intensity;
 
@@ -85,10 +68,8 @@ const HeatmapLayer = ({ centerCoords, map, isVisible }: HeatmapLayerProps) => {
                     heatmapOverlay.addLayer(marker);
                   });
 
-                  // Only add the layer if map is mounted, valid, and still visible
-                  if (isVisible) {
-                    heatmapOverlay.addTo(map);
-                  }
+                  // Only add the layer if map is mounted and valid
+                  heatmapOverlay.addTo(map);
                 })
                 .catch(error => {
                   console.error("Error fetching heatmap data:", error);
@@ -102,10 +83,7 @@ const HeatmapLayer = ({ centerCoords, map, isVisible }: HeatmapLayerProps) => {
     } catch (error) {
       console.error("Error in HeatmapLayer:", error);
     }
-  }, [centerCoords, map, isVisible]); // Respond to isVisible changes
 
-  // Cleanup effect when component unmounts
-  useEffect(() => {
     return () => {
       // Safety cleanup
       try {
@@ -119,7 +97,7 @@ const HeatmapLayer = ({ centerCoords, map, isVisible }: HeatmapLayerProps) => {
         console.error("Error during HeatmapLayer cleanup:", err);
       }
     };
-  }, [map]);
+  }, [centerCoords, map, isVisible]); // Add isVisible to dependencies
 
   return null;
 };
