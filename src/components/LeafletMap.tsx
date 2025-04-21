@@ -480,7 +480,6 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         <HeatmapLayer
           centerCoords={userLocation}
           map={mapInstanceRef.current}
-          isVisible={showHeatmap}
         />
       )}
     </div>
