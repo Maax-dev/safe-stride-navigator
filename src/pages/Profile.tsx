@@ -15,6 +15,7 @@ const Profile = () => {
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // Load user data from localStorage
@@ -42,6 +43,7 @@ const Profile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage(null);
 
     try {
       await updateUserProfile(email, contactName, contactEmail);
@@ -50,6 +52,7 @@ const Profile = () => {
         description: "Your profile has been successfully updated.",
       });
     } catch (error: any) {
+      setErrorMessage(error.message || "Failed to update profile. Please try again later.");
       toast({
         title: "Update Failed",
         description: error.message || "Failed to update profile. Please try again later.",
@@ -81,6 +84,11 @@ const Profile = () => {
           <CardTitle className="text-2xl text-center">Profile Settings</CardTitle>
         </CardHeader>
         <CardContent>
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md mb-4 text-sm">
+              {errorMessage}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

@@ -122,15 +122,24 @@ export async function updateUserProfile(
       })
     });
 
-    // Check if response exists before trying to parse
-    if (!res) {
-      throw new Error("No response received from server");
-    }
-
-    const data = await res.json();
-    
+    // Check response status first
     if (!res.ok) {
-      throw new Error(data.error || data.detail || "Failed to update profile");
+      if (res.status === 404) {
+        throw new Error("Profile update endpoint not found. The server may need to be updated.");
+      } else {
+        throw new Error(`Server returned ${res.status}: ${res.statusText}`);
+      }
+    }
+    
+    // Only try to parse JSON if we have content
+    const contentType = res.headers.get("content-type");
+    let data;
+    
+    if (contentType && contentType.includes("application/json") && res.headers.get("content-length") !== "0") {
+      data = await res.json();
+    } else {
+      // For empty responses or non-JSON responses
+      data = { message: "Profile updated successfully" };
     }
     
     // Update local storage with new details
