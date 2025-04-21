@@ -70,16 +70,19 @@ export async function onAuthChanged(callback: (user: any) => void) {
   if (!token) return callback(null);
 
   try {
-    const res = await fetch(`${BASE_URL}/home`, {
+    const res = await fetch(`${BASE_URL}/me`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
 
+    console.log('Auth check response status:', res.status);
+
     if (res.ok) {
       const user = await res.json();
       callback(user);
     } else {
+      console.error('Auth check failed with status:', res.status);
       callback(null);
     }
   } catch (error) {
