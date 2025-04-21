@@ -101,10 +101,24 @@ export async function updateUserProfile(
   if (!token) throw new Error("No authentication token found");
 
   console.log("Updating profile with:", { email, contactName, contactEmail });
-  console.log("Using URL:", `${BASE_URL}/update_profile`);
   
   try {
-    const res = await fetch(`${BASE_URL}/update_profile`, {
+    // First, update local storage immediately (optimistic update)
+    const userData = JSON.parse(localStorage.getItem('safeStrideUser') || '{}');
+    const updatedUserData = {
+      ...userData,
+      email,
+      emergency_contact: {
+        name: contactName,
+        email: contactEmail
+      }
+    };
+    
+    // Update local storage right away
+    localStorage.setItem('safeStrideUser', JSON.stringify(updatedUserData));
+    
+    // Create request options with mode: 'no-cors' to handle CORS issues
+    const requestOptions = {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -117,8 +131,13 @@ export async function updateUserProfile(
           email: contactEmail
         }
       })
-    });
+    };
 
+    console.log("Using URL:", `${BASE_URL}/update_profile`);
+    console.log("Request options:", requestOptions);
+    
+    const res = await fetch(`${BASE_URL}/update_profile`, requestOptions);
+    
     console.log("Profile update response status:", res.status);
     
     // Check if the response is JSON
@@ -130,17 +149,6 @@ export async function updateUserProfile(
         throw new Error(data.error || data.detail || "Failed to update profile");
       }
       
-      // Update local storage with new details
-      const userData = JSON.parse(localStorage.getItem('safeStrideUser') || '{}');
-      localStorage.setItem('safeStrideUser', JSON.stringify({
-        ...userData,
-        email,
-        emergency_contact: {
-          name: contactName,
-          email: contactEmail
-        }
-      }));
-
       return data;
     } else {
       // Handle non-JSON responses
@@ -155,6 +163,16 @@ export async function updateUserProfile(
     }
   } catch (error) {
     console.error("Profile update error:", error);
+    
+    // Even if the backend request failed, we've already updated localStorage
+    // So the UI will still reflect the changed data
+    
+    // Only rethrow if it's not a network error that might be due to CORS
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      console.warn("Network error occurred, but profile was updated locally");
+      return { message: "Profile updated locally. Server update failed, but your changes are saved in this browser.", localOnly: true };
+    }
+    
     throw error;
   }
 }

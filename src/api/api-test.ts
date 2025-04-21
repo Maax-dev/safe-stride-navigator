@@ -51,23 +51,54 @@ export async function testBackendConnectivity() {
       console.log("ℹ️ No token found, skipping /me endpoint test");
     }
 
-    // Test update_profile endpoint
+    // Test update_profile endpoint with CORS preflight check
     console.log("\nTesting update_profile endpoint...");
     if (token) {
       try {
-        const testProfileRes = await fetch(`${BASE_URL}/update_profile`, {
+        // First test with an OPTIONS request (CORS preflight)
+        const preflightRes = await fetch(`${BASE_URL}/update_profile`, {
           method: "OPTIONS",
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
         
-        console.log("Update profile endpoint OPTIONS check:", testProfileRes.status);
+        console.log("Update profile CORS preflight check:", preflightRes.status);
+        console.log("CORS Headers:", {
+          'Access-Control-Allow-Origin': preflightRes.headers.get('Access-Control-Allow-Origin'),
+          'Access-Control-Allow-Methods': preflightRes.headers.get('Access-Control-Allow-Methods'),
+          'Access-Control-Allow-Headers': preflightRes.headers.get('Access-Control-Allow-Headers'),
+        });
+        
+        if (preflightRes.ok) {
+          console.log("✅ Update profile CORS preflight passed");
+        } else {
+          console.log("⚠️ Update profile CORS preflight failed");
+        }
+        
+        // Now test with a standard PUT request
+        const testProfileRes = await fetch(`${BASE_URL}/update_profile`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: "test@example.com",
+            emergency_contact: {
+              name: "Test Contact",
+              email: "contact@example.com"
+            }
+          })
+        });
+        
+        console.log("Update profile endpoint PUT check:", testProfileRes.status);
         
         if (testProfileRes.ok) {
-          console.log("✅ Update profile endpoint appears available");
+          console.log("✅ Update profile endpoint works correctly");
         } else {
-          console.log("⚠️ Update profile endpoint may have issues");
+          console.log("⚠️ Update profile endpoint has issues");
         }
       } catch (error) {
         console.error("❌ Update profile endpoint test failed:", error);

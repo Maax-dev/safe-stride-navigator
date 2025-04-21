@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ const Profile = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('safeStrideUser');
@@ -50,24 +52,35 @@ const Profile = () => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setUpdateStatus(null);
 
     try {
-      if (!localStorage.getItem('safeStrideUser')) {
-        localStorage.setItem('safeStrideUser', JSON.stringify({
-          email,
-          emergency_contact: {
-            name: contactName,
-            email: contactEmail
-          }
-        }));
+      const result = await updateUserProfile(email, contactName, contactEmail);
+      
+      // Check if this was a local-only update due to network/CORS issues
+      if (result.localOnly) {
+        setUpdateStatus("Profile updated locally. Changes will be visible on this device but may not sync with the server.");
+        toast({
+          title: "Profile Updated Locally",
+          description: "Your profile has been updated on this device, but we couldn't connect to the server.",
+          variant: "default",
+        });
+      } else {
+        setUpdateStatus("Profile updated successfully!");
+        toast({
+          title: "Profile Updated",
+          description: "Your profile has been successfully updated.",
+        });
       }
       
-      await updateUserProfile(email, contactName, contactEmail);
-      
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated.",
-      });
+      // Re-fetch from localStorage to ensure UI is in sync
+      const updatedUserData = localStorage.getItem('safeStrideUser');
+      if (updatedUserData) {
+        const user = JSON.parse(updatedUserData);
+        setEmail(user.email || '');
+        setContactName(user.emergency_contact?.name || '');
+        setContactEmail(user.emergency_contact?.email || '');
+      }
     } catch (error: any) {
       console.error("Profile update error:", error);
       
@@ -111,6 +124,13 @@ const Profile = () => {
         <Alert variant="destructive" className="mb-4 max-w-md mx-auto w-full">
           <AlertTitle>Update Failed</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      {updateStatus && !error && (
+        <Alert className="mb-4 max-w-md mx-auto w-full">
+          <AlertTitle>Status</AlertTitle>
+          <AlertDescription>{updateStatus}</AlertDescription>
         </Alert>
       )}
       
