@@ -450,5 +450,44 @@ def heatmap_data():
 
     return jsonify(points)
 
+@app.route("/update_profile", methods=["PUT"])
+def update_profile():
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Authorization header missing or invalid"}), 401
+
+    token = auth_header.replace("Bearer ", "")
+    payload = decode_token(token)
+    if not payload:
+        return jsonify({"error": "Invalid or expired token"}), 401
+
+    try:
+        data = request.get_json()
+        email = data.get("email")
+        emergency_contact = data.get("emergency_contact")
+
+        if not email or not emergency_contact:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        user = mongo.db.users.find_one({"_id": ObjectId(payload["user_id"])})
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        # Update user document
+        mongo.db.users.update_one(
+            {"_id": ObjectId(payload["user_id"])},
+            {
+                "$set": {
+                    "email": email,
+                    "emergency_contact": emergency_contact
+                }
+            }
+        )
+
+        return jsonify({"message": "Profile updated successfully"})
+    except Exception as e:
+        print("Profile update error:", e)
+        return jsonify({"error": "Failed to update profile"}), 500
+
 if __name__ == "__main__":
     app.run(debug=True)

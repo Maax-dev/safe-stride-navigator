@@ -90,3 +90,51 @@ export async function onAuthChanged(callback: (user: any) => void) {
     callback(null);
   }
 }
+
+export async function updateUserProfile(
+  email: string,
+  contactName: string,
+  contactEmail: string
+) {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("No authentication token found");
+
+  try {
+    const res = await fetch(`${BASE_URL}/update_profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        email,
+        emergency_contact: {
+          name: contactName,
+          email: contactEmail
+        }
+      })
+    });
+
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.error || data.detail || "Failed to update profile");
+    }
+    
+    // Update local storage with new details
+    const userData = JSON.parse(localStorage.getItem('safeStrideUser') || '{}');
+    localStorage.setItem('safeStrideUser', JSON.stringify({
+      ...userData,
+      email,
+      emergency_contact: {
+        name: contactName,
+        email: contactEmail
+      }
+    }));
+
+    return data;
+  } catch (error) {
+    console.error("Profile update error:", error);
+    throw error;
+  }
+}
