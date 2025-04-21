@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateUserProfile } from '@/api/auth';
 import { toast } from "@/hooks/use-toast";
-import { UserRound } from "lucide-react";
+import { UserRound, ArrowLeft } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -24,10 +24,19 @@ const Profile = () => {
       return;
     }
 
-    const user = JSON.parse(userData);
-    setEmail(user.email || '');
-    setContactName(user.emergency_contact?.name || '');
-    setContactEmail(user.emergency_contact?.email || '');
+    try {
+      const user = JSON.parse(userData);
+      setEmail(user.email || '');
+      setContactName(user.emergency_contact?.name || '');
+      setContactEmail(user.emergency_contact?.email || '');
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+      toast({
+        title: "Error",
+        description: "Could not load user profile data",
+        variant: "destructive",
+      });
+    }
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +52,7 @@ const Profile = () => {
     } catch (error: any) {
       toast({
         title: "Update Failed",
-        description: error.message || "Failed to update profile",
+        description: error.message || "Failed to update profile. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -52,11 +61,22 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-4">
-            <UserRound className="h-12 w-12 text-primary" />
+          <div className="flex items-center justify-between mb-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/home')}
+              className="flex items-center gap-1"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <div className="flex items-center justify-center">
+              <UserRound className="h-12 w-12 text-primary" />
+            </div>
           </div>
           <CardTitle className="text-2xl text-center">Profile Settings</CardTitle>
         </CardHeader>

@@ -1,5 +1,8 @@
-// Change the BASE_URL to local development server
-export const BASE_URL = "http://127.0.0.1:5000"; // Updated to use local backend and now exported
+
+// Change the BASE_URL to the deployed backend URL
+export const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+  ? "http://127.0.0.1:5000" 
+  : "https://safestride-backend.herokuapp.com"; // This is just a placeholder, replace with your actual deployed backend URL
 
 export async function registerUser(
   email: string,
@@ -100,11 +103,14 @@ export async function updateUserProfile(
   if (!token) throw new Error("No authentication token found");
 
   try {
+    // Add a log to debug the URL and request
+    console.log(`Sending profile update to: ${BASE_URL}/update_profile`);
+    
     const res = await fetch(`${BASE_URL}/update_profile`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
+        "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({
         email,
@@ -114,6 +120,11 @@ export async function updateUserProfile(
         }
       })
     });
+
+    // Check if response exists before trying to parse
+    if (!res) {
+      throw new Error("No response received from server");
+    }
 
     const data = await res.json();
     
