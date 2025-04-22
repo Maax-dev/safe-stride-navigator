@@ -53,26 +53,28 @@ interface LeafletMapProps {
   containerRef?: React.RefObject<HTMLDivElement>;
 }
 
+// Create a MapThemeUpdater component to handle theme updates
+const MapThemeUpdater = () => {
+  const map = useMap();
+  const { theme } = useTheme();
+  
+  useEffect(() => {
+    // Leaflet doesn't support direct style changes, we'd need a different approach
+    // This is just a placeholder for future theme implementation
+    console.log("Theme changed to:", theme);
+  }, [theme]);
+  
+  return null;
+};
+
 export const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false, isMounted = true, containerRef }) => {
   const { theme } = useTheme();
   const [mapCenter, setMapCenter] = useState<[number, number]>([34.0522, -118.2437]); // Default to Los Angeles
   const [mapZoom, setMapZoom] = useState(12);
   const mapRef = useRef<L.Map | null>(null);
 
-  // Handle theme changes
-  const MapThemeUpdater = () => {
-    const map = useMap();
-    
-    useEffect(() => {
-      // Leaflet doesn't support direct style changes, we'd need a different approach
-      // This is just a placeholder for future theme implementation
-      console.log("Theme changed to:", theme);
-    }, [theme]);
-    
-    return null;
-  };
-
-  const heatmapData = mockIncidents.map((incident) => [
+  // Transform heatmap data to ensure it's the correct type
+  const heatmapData: [number, number, number?][] = mockIncidents.map((incident) => [
     incident.latitude,
     incident.longitude,
     incident.riskLevel === 'high' ? 1 : incident.riskLevel === 'medium' ? 0.7 : 0.4
@@ -107,7 +109,6 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ showHeatmap = false, isM
       center={mapCenter} 
       zoom={mapZoom} 
       style={mapStyle} 
-      ref={mapRef} 
       className="map-container"
       zoomControl={false}
     >

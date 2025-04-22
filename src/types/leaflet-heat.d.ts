@@ -18,12 +18,13 @@ declare module 'leaflet.heat' {
       blur?: number;
       gradient?: {[key: number]: string};
     }
-    
-    function heatLayer(
-      latlngs: L.LatLngExpression[],
-      options?: HeatLayerOptions
-    ): HeatLayer;
   }
   
-  export = Heat;
+  // Add this function to the root level of the module
+  function heatLayer(
+    latlngs: L.LatLngExpression[],
+    options?: Heat.HeatLayerOptions
+  ): Heat.HeatLayer;
+  
+  export = heatLayer;
 }

@@ -9,7 +9,7 @@ declare module 'react-leaflet' {
     style?: React.CSSProperties;
     className?: string;
     zoomControl?: boolean;
-    ref?: React.Ref<L.Map>;
+    // Remove the ref property that's causing issues
   }
 
   export class MapContainer extends React.Component<MapContainerProps> {}
@@ -24,6 +24,8 @@ declare module 'react-leaflet' {
   export interface MarkerProps {
     position: L.LatLngExpression;
     icon?: L.Icon | L.DivIcon;
+    // Allow children in Marker component
+    children?: React.ReactNode;
   }
   
   export class Marker extends React.Component<MarkerProps> {}

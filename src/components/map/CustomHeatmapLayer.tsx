@@ -18,13 +18,14 @@ interface CustomHeatmapLayerProps {
 
 const CustomHeatmapLayer = ({ points, options = {} }: CustomHeatmapLayerProps) => {
   const map = useMap();
-  const heatLayerRef = useRef<L.Heat.HeatLayer | null>(null);
+  const heatLayerRef = useRef<L.Layer | null>(null);
 
   useEffect(() => {
     if (!map) return;
 
     // Create heatmap layer
-    const heatLayer = (L.heat as any).heatLayer(points, {
+    // Using the module directly without namespaces
+    const heatLayer = require('leaflet.heat')(points, {
       radius: options.radius || 15,
       blur: options.blur || 15,
       maxZoom: options.maxZoom || 18,
