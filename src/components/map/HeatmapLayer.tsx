@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import L from 'leaflet';
 
@@ -13,7 +14,7 @@ const HeatmapLayer = ({ centerCoords, map }: HeatmapLayerProps) => {
 
   useEffect(() => {
     // Safety check to ensure map exists and is valid
-    if (!map || !map._loaded) {
+    if (!map || !(map as any).getContainer) {
       console.error("Map is not properly initialized in HeatmapLayer");
       return;
     }
@@ -32,7 +33,7 @@ const HeatmapLayer = ({ centerCoords, map }: HeatmapLayerProps) => {
 
       // Short delay to ensure map is ready
       setTimeout(() => {
-        if (map && map._loaded) {
+        if (map && (map as any).getContainer) {
           try {
             // Fetch heatmap data from your backend API
             fetch(`${BASE_URL}/heatmap_data`)

@@ -14,7 +14,7 @@ const MapMarker = ({ position, map, isUser = false, popup = '' }: MapMarkerProps
 
   useEffect(() => {
     // Check if map is properly initialized before adding marker
-    if (!map || !map._container || !map._loaded) {
+    if (!map || !map.getContainer || !(map as any).getContainer()) {
       console.log("Map not ready in MapMarker, marker creation delayed");
       return;
     }
@@ -33,7 +33,7 @@ const MapMarker = ({ position, map, isUser = false, popup = '' }: MapMarkerProps
 
       // Add the marker to the map only after we're sure the map is ready
       const addMarker = () => {
-        if (map && map._loaded && map._container) {
+        if (map && map.getContainer && (map as any).getContainer()) {
           marker.addTo(map);
           if (popup) marker.bindPopup(popup);
         }

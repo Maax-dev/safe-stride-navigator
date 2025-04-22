@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import LeafletMap from './LeafletMap';
+import { LeafletMap } from './LeafletMap';
 import ViewToggle from './map/ViewToggle';
 
 interface MapViewProps {

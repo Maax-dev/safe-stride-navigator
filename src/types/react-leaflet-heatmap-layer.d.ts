@@ -1,19 +1,20 @@
 
 declare module 'react-leaflet-heatmap-layer' {
-  import { LayerGroup } from 'leaflet';
-  import { ReactNode } from 'react';
+  import { LayerProps } from 'react-leaflet';
+  import L from 'leaflet';
 
-  interface HeatmapLayerProps {
+  export interface HeatmapLayerProps extends LayerProps {
     points: any[];
-    radius?: number;
-    blur?: number;
-    max?: number;
-    maxZoom?: number;
-    gradient?: { [key: number]: string };
-    minOpacity?: number;
+    longitudeExtractor?: (point: any) => number;
+    latitudeExtractor?: (point: any) => number;
     intensityExtractor?: (point: any) => number;
+    max?: number;
+    radius?: number;
+    minOpacity?: number;
+    maxZoom?: number;
+    gradient?: Record<string, string>;
+    blur?: number;
   }
 
-  declare const HeatmapLayer: React.ComponentType<HeatmapLayerProps>;
-  export default HeatmapLayer;
+  export default class HeatmapLayer extends React.Component<HeatmapLayerProps> {}
 }
