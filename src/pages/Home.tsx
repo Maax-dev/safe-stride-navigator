@@ -6,7 +6,6 @@ import MapView from '@/components/MapView';
 import IncidentReporter from '@/components/IncidentReporter';
 import { Navigation, Flag, UserRound } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
-import ThemeToggle from '@/components/ThemeToggle';
 
 const Home = () => {
   const [userName, setUserName] = useState<string>(() => {
@@ -44,7 +43,6 @@ const Home = () => {
           <div className="flex items-center gap-2">
             <Navigation className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold">Safe Stride</h1>
-            <ThemeToggle />
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">Welcome, {userName}</span>
